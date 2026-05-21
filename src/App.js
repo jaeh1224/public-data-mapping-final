@@ -22,8 +22,6 @@ export default function App() {
   const [selectedAnalysisData, setSelectedAnalysisData] = useState(null);
 
   const [currentSubTab, setCurrentSubTab] = useState('종합');
-  
-  // ⭐ 변경: '기능'과 '사업'을 제외한 6대 핵심 탭으로 마스터 리스트 수정
   const subTabs = ['종합', '통계', '법', '목적', '조직', '도움말'];
 
   const [chatHistoryByReport, setChatHistoryByReport] = useState({});
@@ -33,6 +31,7 @@ export default function App() {
   const [dragPopup, setDragPopup] = useState({ visible: false, x: 0, y: 0, text: '' });
   const [isReportSelectorOpen, setIsReportSelectorOpen] = useState(false);
 
+  // 💻 데스크톱용 마우스 드래그 감지
   const handleTextSelection = () => {
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
@@ -63,7 +62,7 @@ export default function App() {
 
   const handleAskDragText = () => {
     if (activeReportIdx === null) return;
-    setChatInput(`"${dragPopup.text}" -> 이 내용에 대해 사회과학적 관점으로 보완 설명해줘.`);
+    setChatInput(`"${dragPopup.text}" 단락을 바탕으로 연구 제안서에 쓸 행정적 근거 논거를 추천해줘.`);
     setCurrentMenu('챗봇');
     setDragPopup(prev => ({ ...prev, visible: false }));
   };
@@ -75,22 +74,34 @@ export default function App() {
       dataTitle: selectedAnalysisData.title,
       timestamp: '방금 전 캡처됨'
     });
-    alert(`현재 대시보드가 캡처되어 챗봇창에 첨부되었습니다!`);
+    alert(`현재 [${currentSubTab}] 대시보드 화면이 캡처되어 챗봇창에 연동되었습니다!`);
   };
 
+  // 🤖 고도화된 챗봇 응답 알고리즘 프로세서
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
     if (!chatInput.trim() && !attachedCapture) return;
 
     const currentHistory = chatHistoryByReport[activeReportIdx] || [
-      { sender: 'ai', text: '안녕하세요! 현재 수집한 공공데이터와 법령 지표를 기반으로 공모전 제안서 스토리라인을 다듬어 드릴게요.' }
+      { sender: 'ai', text: '안녕하세요! 현재 수집한 공공데이터의 위계 규격과 소관 부처 목적성을 기반으로 사회과학적 연구 제안서 스토리라인을 빌드업해 드릴게요.' }
     ];
 
     const userMessage = { sender: 'user', text: chatInput, capture: attachedCapture ? { ...attachedCapture } : null };
 
-    let aiResponseText = "제시해주신 데이터 구조를 분석해 볼 때, 공모전 제안서의 '기대효과' 파트에 소관 법령 지표를 결합하여 서술하는 방식이 심사위원단에 가장 설득력 있게 다가갈 것입니다.";
-    if (attachedCapture) {
-      aiResponseText = `🤖 [화면 캡처 분석 결과]: 보내주신 [${attachedCapture.dataTitle} > ${attachedCapture.sourceTab}] 스냅샷 인프라를 판독했습니다. 이 구간 수치를 상관관계 가설의 독립변수로 결합해 보세요.`;
+    // 💡 기획 스펙이 투영된 인공지능 알고리즘 분기 설계
+    let aiResponseText = "제시해주신 연구 가설을 발전시키기 위해, 데이터 수집 대상 지자체의 조례 규격과 실·국 단위의 공공 개방 목적성을 인과관계 모델의 통제 변수로 결합하는 스토리라인을 추천합니다.";
+    
+    const targetTab = attachedCapture ? attachedCapture.sourceTab : currentSubTab;
+    const dataName = selectedAnalysisData ? selectedAnalysisData.title : '선택된 데이터';
+
+    if (chatInput.includes("법") || targetTab === "법") {
+      aiResponseText = `⚖️ [AI 법률 위계 분석]: [${dataName}] 분석 결과, 상위 '헌법 및 법령' 지표와 하위 '지자체 자치법규(조례·규칙)' 간의 정합성을 논거로 삼아야 합니다. 특히 '특별법 우선 원칙'을 기획서 서론에 명시하고, 기초/광역 조례 위계 구조에 따른 행정 집행 효율성을 연구의 기대효과로 제시하면 설득력이 대폭 강화됩니다.`;
+    } else if (chatInput.includes("조직") || targetTab === "조직") {
+      aiResponseText = `🏢 [AI 조직 거버넌스 분석]: 본 행정 데이터는 경기도 데이터드림 메타 규격에 따라 '국가 조직'은 제외하고 본청(경제부지사 소관 ➡️ 도시교통실 ➡️ 버스정책과) 및 외청 사업소 위계로 매핑됩니다. 제안서 작성 시, 중앙 부처가 아닌 '지자체 실·국 및 과 단위 직제'의 실무 기능과 산하 공공기관(경기교통공사 등)의 에이전시 역할을 명확히 구분하여 거버넌스 협력 체계도를 그리시는 것을 강력 추천합니다.`;
+    } else if (chatInput.includes("목적") || chatInput.includes("기능") || targetTab === "목적") {
+      aiResponseText = `🎯 [AI 기능·목적 통합 분석]: '정책 분야/영역/대기능'으로 이어지는 기능 분류 체계와 실·국·과 및 공공기관의 '수행 목적성'을 유기적으로 바인딩했습니다. 버스정책과(과 단위)의 수요 예측 효율화 목적과 경기교통공사(공공기관)의 민간 거버넌스 개방 목적이 결합하는 지점을 공모전 제안서의 핵심 '가설 1'로 설정하여 스토리라인을 전개해 보세요.`;
+    } else if (attachedCapture) {
+      aiResponseText = `📸 [모바일 스냅샷 판독]: 동봉해주신 [${attachedCapture.dataTitle} > ${attachedCapture.sourceTab}] 화면을 기반으로 행정학적 메타 분석을 수행했습니다. 해당 단락의 정성 지표를 정량적 R 통계 검정 결과와 융합하여 제안서 결론부의 정책적 시사점으로 매핑하세요.`;
     }
 
     const aiMessage = { sender: 'ai', text: aiResponseText };
@@ -150,16 +161,25 @@ export default function App() {
     }
   };
 
+  // ⭐ 기획안 문서 구조가 완벽하게 바인딩되는 데이터 생성기
   const handleSaveData = (card) => {
     if (activeReportIdx === null) return;
     const currentSaved = savedDataByReport[activeReportIdx] || [];
     if (currentSaved.some(item => item.id === card.id)) { alert("이미 수집되어 보관함에 들어있는 데이터셋입니다."); return; }
     
     const newSavedItem = {
-      ...card, isUploaded: false, fileName: '', rows: '-', cols: '-', size: '-',
-      law: '국토교통부 및 관계 법령에 따른 대중교통 이용 데이터 처리 표준 규격 제14조',
-      purpose: '민간 거버넌스 개방을 통한 청년 창업 인큐베이팅 및 공공 연구 인프라 활성화',
-      org: '공공데이터포털 시스템 품질 거버넌스 관리국'
+      ...card, 
+      isUploaded: false, 
+      fileName: '', rows: '-', cols: '-', size: '-',
+      
+      // 법 위계 및 규칙 구조 투영
+      law: '헌법 ➡️ 법령 ➡️ 명령 [대통령령(시행령) > 총리령/부령(시행규칙)] ➡️ 광역 법규 (조례 > 규칙) ➡️ 기초 법규 (조례/규칙) 위계 구조 준수. (*특별법 > 일반법 규칙 적용)',
+      
+      // 기능 + 목적 통합 구조 투영
+      purpose: '[기능분류]: 정책 분야 ➡️ 정책 영역 ➡️ 대기능 유기적 연계 / [수행목적]: 실·국 단위(도시교통실), 과 단위(버스정책과), 공공기관(경기교통공사) 목적성 통합 매핑',
+      
+      // 국가 조직 제외 지자체/공공기관 구조 투영
+      org: '[지자체 본청]: 경제부지사 ➡️ 실·국(도시교통실) ➡️ 과(버스정책과) 및 외청 직속기관/사업소 ➡️ [공공기관]: 경기교통공사 매핑 (*데이터드림 메타 규격에 따라 국가 관리 부서 항목이 없으므로 국가 조직은 다루지 않음)'
     };
 
     setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: [...currentSaved, newSavedItem] }));
@@ -189,7 +209,7 @@ export default function App() {
   };
 
   const handleQuickAsk = (text) => {
-    setChatInput(`"${text}" -> 이 내용의 공모전 제안서 고도화 스토리라인을 다듬어줘.`);
+    setChatInput(`"${text}" 내용을 바탕으로 연구 제안서 스토리라인 고도화 논거를 짜줘.`);
     setCurrentMenu('챗봇');
   };
 
@@ -199,7 +219,7 @@ export default function App() {
   return (
     <div className="flex h-screen w-full bg-gray-50 text-gray-800 font-sans m-0 p-0 overflow-hidden" onMouseUp={handleTextSelection}>
       
-      {/* PC 전용 드래그 미니 질문 팝업 */}
+      {/* PC 전용 드래그 질문 팝업 단추 */}
       {dragPopup.visible && (
         <button onClick={handleAskDragText} className="drag-popup-btn absolute z-[999] bg-gray-950 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-2xl border-none cursor-pointer hover:bg-blue-600 hidden md:flex items-center gap-1.5 animate-bounce" style={{ left: `${dragPopup.x}px`, top: `${dragPopup.y}px` }}>
           <span>💬</span> 챗봇에서 질문하기
@@ -259,7 +279,7 @@ export default function App() {
       {/* ================= MAIN DISPLAY VIEWPORT ================= */}
       <main className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto box-border items-center justify-center relative pb-20 md:pb-8">
         
-        {/* 📱 모바일 상단 헤더 바 */}
+        {/* 📱 모바일 전용 헤더 바 */}
         {activeReportIdx !== null && (
           <div className="w-full bg-white border border-gray-200 rounded-2xl p-3 flex justify-between items-center md:hidden mb-4 shadow-sm select-none shrink-0 relative z-30">
             <button 
@@ -272,7 +292,6 @@ export default function App() {
               <button onClick={handleScreenCapture} className="bg-gray-900 text-white font-bold text-[11px] px-3 py-1.5 rounded-lg border-none cursor-pointer shadow-sm">📸 캡처</button>
             )}
 
-            {/* 모바일용 드롭다운 팝업 */}
             {isReportSelectorOpen && (
               <div className="absolute left-3 top-14 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl p-2 z-50 divide-y divide-gray-100">
                 <div className="max-h-36 overflow-y-auto pb-1.5">
@@ -300,7 +319,7 @@ export default function App() {
           
           <div className="w-full max-w-4xl h-full flex flex-col items-center justify-start">
             
-            {/* PC 상단 브레드크럼 */}
+            {/* PC 상단 가이드 러닝 크럼 */}
             <div className="w-full border-b border-gray-200 pb-2 mb-4 text-sm text-gray-400 font-medium text-left hidden md:flex justify-between items-center">
               <span>{reports[activeReportIdx]} &gt; {currentMenu} {selectedAnalysisData && ` > ${selectedAnalysisData.title} [${currentSubTab}]`}</span>
               {currentMenu === '자료분석' && selectedAnalysisData && (
@@ -308,7 +327,7 @@ export default function App() {
               )}
             </div>
 
-            {/* 1. 자료검색 섹션 */}
+            {/* 1. 자료검색 세션 */}
             {currentMenu === '자료검색' && (
               <div className={`w-full max-w-3xl flex flex-col items-center transition-all duration-500 ease-in-out ${isSearched ? 'mt-2' : 'mt-[10vh] md:mt-[15vh]'}`}>
                 <h1 className="font-extrabold tracking-wide text-center text-xl md:text-3xl mb-4 md:mb-6">🔎 {reports[activeReportIdx]} 공공데이터 검색</h1>
@@ -337,7 +356,7 @@ export default function App() {
               </div>
             )}
 
-            {/* 2. 자료분석 섹션 */}
+            {/* 2. 자료분석 세션 */}
             {currentMenu === '자료분석' && (
               <div className="w-full font-sans text-left select-text">
                 
@@ -345,7 +364,7 @@ export default function App() {
                   <div className="w-full mt-2">
                     <div className="mb-6 border-b pb-4 hidden md:block">
                       <h1 className="text-3xl font-extrabold text-gray-900">📊 자료 종합 분석 허브</h1>
-                      <p className="text-sm text-gray-500 mt-1">정성 정보는 개방형으로 선제 확인 가능하며, 통계 계량 모델은 파일 장착 시 기동됩니다.</p>
+                      <p className="text-sm text-gray-500 mt-1">정성 구조 및 소관 부처 목적 체계 매핑 현황을 다각도로 조회합니다.</p>
                     </div>
 
                     {currentReportSavedData.length === 0 ? (
@@ -386,23 +405,24 @@ export default function App() {
                   </div>
                 ) : (
                   
-                  /* 6대 탭 상세 모듈 화면 */
+                  /* 6대 마스터 탭 전용 레이아웃 스페이스 */
                   <div className="w-full mt-1">
                     <button onClick={() => setSelectedAnalysisData(null)} className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-bold px-3 py-1.5 rounded-xl text-xs cursor-pointer shadow-sm mb-4">⬅️ 자료함 목록으로</button>
                     <h2 className="text-lg md:text-2xl font-black text-gray-900 mb-4 md:mb-6 leading-tight">{selectedAnalysisData.title}</h2>
 
-                    {/* 반응형 6분할 구조 탭 바 */}
+                    {/* 반응형 6분할 구조 마스터 바 */}
                     <div className="flex md:grid md:grid-cols-6 overflow-x-auto whitespace-nowrap bg-white border border-gray-200 rounded-xl p-1 shadow-sm mb-4 md:mb-6 gap-1 text-center no-scrollbar">
                       {subTabs.map((tab) => (
                         <button key={tab} onClick={() => setCurrentSubTab(tab)} className={`text-center py-2 md:py-2.5 px-4 md:px-0 text-xs font-bold rounded-lg cursor-pointer transition-all border-none inline-block md:block ${currentSubTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>{tab}</button>
                       ))}
                     </div>
 
+                    {/* 기획서 기준 최종 정성 텍스트 렌더링 블록 */}
                     <div className="bg-white border border-gray-200 rounded-2xl p-5 md:p-6 shadow-sm min-h-[200px]">
                       {currentSubTab === '종합' && (
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">📜 데이터셋 개요 요약</h3><button onClick={() => handleQuickAsk("데이터셋 개요 기술통계")} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
-                          <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 bg-gray-50 p-4 rounded-xl">본 데이터셋은 {selectedAnalysisData.subtitle}에서 제공하는 정규 행정 표준 지표 데이터입니다. 공모전 배경 및 목적성 확립을 위한 근거 데이터로 쓰기 좋습니다.</p>
+                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">📜 데이터셋 메타 개요 요약</h3><button onClick={() => handleQuickAsk("데이터셋 메타 개요 요약")} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 bg-gray-50 p-4 rounded-xl">本 데이터셋은 산하 소관 부처의 특정 행정 목적 달성을 위해 계량 수집된 지표입니다. 소관 법률 위계 구조 및 부서별 실무 목적 체계와 교차 매핑하여 정책 기획서의 배경 논거로 원용하기에 매우 최적화되어 있습니다.</p>
                         </div>
                       )}
                       {currentSubTab === '통계' && (
@@ -417,24 +437,44 @@ export default function App() {
                       )}
                       {currentSubTab === '법' && (
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">⚖️ 소관 및 규제 근거 법령 단락</h3><button onClick={() => handleQuickAsk(selectedAnalysisData.law)} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
-                          <p className="p-4 bg-blue-50 text-xs md:text-sm text-blue-900 rounded-xl leading-relaxed m-0 font-semibold">{selectedAnalysisData.law}</p>
+                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">⚖️ 소관 및 규제 근거 법령 위계 구조</h3><button onClick={() => handleQuickAsk(selectedAnalysisData.law)} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <div className="p-4 bg-blue-50/70 text-xs md:text-sm text-blue-950 rounded-xl leading-relaxed m-0 space-y-2">
+                            <p className="font-extrabold text-blue-800 border-b border-blue-200 pb-1.5 mb-2">📋 행정 법률 위계 기틀 매핑 단락</p>
+                            <p className="m-0 font-medium">{selectedAnalysisData.law}</p>
+                            <div className="text-[11px] text-blue-600 bg-white/60 p-2.5 rounded-lg mt-2 font-mono leading-normal">
+                              헌법 ➡️ 법령/법률 ➡️ 명령 [대통령령(시행령) &gt; 총리령/부령(시행규칙)] ➡️ 광역 조례/규칙 ➡️ 기초 조례/규칙
+                            </div>
+                          </div>
                         </div>
                       )}
                       {currentSubTab === '목적' && (
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">🎯 공공 개방 및 아카이빙 목적</h3><button onClick={() => handleQuickAsk(selectedAnalysisData.purpose)} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
-                          <p className="p-4 bg-gray-50 text-xs md:text-sm text-gray-700 rounded-xl leading-relaxed m-0">{selectedAnalysisData.purpose}</p>
+                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">🎯 정책 기능 분류 및 행정 수행 목적성</h3><button onClick={() => handleQuickAsk(selectedAnalysisData.purpose)} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <div className="p-4 bg-gray-50 text-xs md:text-sm text-gray-700 rounded-xl leading-relaxed m-0 space-y-3">
+                            <div>
+                              <span className="font-bold text-blue-600 block text-[11px] uppercase mb-0.5">[기능 분류 체계]</span>
+                              <p className="m-0 font-semibold text-gray-900">정책 분야 ➡️ 정책 영역 ➡️ 대기능 연계 고도화</p>
+                            </div>
+                            <div className="border-t pt-2 border-gray-200">
+                              <span className="font-bold text-emerald-600 block text-[11px] uppercase mb-0.5">[거버넌스 수행 목적]</span>
+                              <p className="m-0 text-gray-600">{selectedAnalysisData.purpose}</p>
+                            </div>
+                          </div>
                         </div>
                       )}
                       {currentSubTab === '조직' && (
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">🏢 데이터 거버넌스 소관 부처 직제</h3><button onClick={() => handleQuickAsk(selectedAnalysisData.org)} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
-                          <p className="p-4 bg-gray-50 text-xs md:text-sm text-gray-700 rounded-xl leading-relaxed m-0 font-bold">{selectedAnalysisData.org}</p>
+                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">🏢 데이터 거버넌스 소관 부처 직제 정보</h3><button onClick={() => handleQuickAsk(selectedAnalysisData.org)} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <div className="p-4 bg-amber-50/40 border border-amber-100 text-xs md:text-sm text-gray-800 rounded-xl leading-relaxed m-0 space-y-2">
+                            <p className="m-0 font-medium">{selectedAnalysisData.org}</p>
+                            <div className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded font-mono">
+                              지자체 본청 위계: 직할기관 / 행정1·2부지사 / 경제부지사 [본청] ➡️ 실·국 ➡️ 과 / 산하 공공기관 에이전시 매핑
+                            </div>
+                          </div>
                         </div>
                       )}
                       {currentSubTab === '도움말' && (
-                        <p className="text-xs md:text-sm text-gray-600 m-0 leading-relaxed">• <strong>이용 팁</strong>: 💻 PC에서는 마우스 드래그를 통해 즉시 챗봇에 문장을 연계 질문할 수 있으며, 📱 모바일 터치 스크린에서는 상단의 원터치 [💬 질문] 단추로 챗봇 상담을 나눌 수 있습니다.</p>
+                        <p className="text-xs md:text-sm text-gray-600 m-0 leading-relaxed">• <strong>스마트 링크 매핑</strong>: 💻 PC 브라우저에서는 마우스 드래그를 통해 임의 영역의 텍스트를 즉시 챗봇에 질의할 수 있으며, 📱 모바일 터치 패널에서는 우측 상단의 원터치 [💬 질문] 버튼을 탭하여 가설 기획서 상담 피드를 트리거할 수 있습니다.</p>
                       )}
                     </div>
                   </div>
@@ -442,7 +482,7 @@ export default function App() {
               </div>
             )}
 
-            {/* 3. 챗봇 섹션 */}
+            {/* 3. 챗봇 세션 */}
             {currentMenu === '챗봇' && (
               <div className="w-full max-w-3xl flex flex-col h-[70vh] md:h-[75vh] bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-left">
                 <div className="bg-gray-950 text-white px-5 py-3.5 flex justify-between items-center select-none shrink-0">
@@ -450,10 +490,10 @@ export default function App() {
                     <span className="text-base md:text-lg">🤖</span>
                     <div>
                       <span className="font-bold text-xs md:text-sm block">연구 매핑 AI 어시스턴트</span>
-                      <span className="text-[9px] md:text-[10px] text-green-400 font-medium">● 가설 고도화 엔진 작동 중</span>
+                      <span className="text-[9px] md:text-[10px] text-green-400 font-medium">● 행정·조직 분석 엔진 구동중</span>
                     </div>
                   </div>
-                  <span className="text-xs text-gray-500 font-mono hidden md:inline">{reports[activeReportIdx]} 챗룸</span>
+                  <span className="text-xs text-gray-500 font-mono hidden md:inline">{reports[activeReportIdx]} 룸</span>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/50">
@@ -481,7 +521,7 @@ export default function App() {
                   )}
 
                   <div className="flex gap-2">
-                    <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="분석 결과나 인과관계에 대해 질문하세요..." className="flex-1 px-4 py-2.5 md:py-3 border border-gray-300 rounded-xl text-xs md:text-sm focus:outline-none focus:border-blue-500 shadow-inner" />
+                    <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="분석 결과나 행정적 상관관계 가설에 대해 질문하세요..." className="flex-1 px-4 py-2.5 md:py-3 border border-gray-300 rounded-xl text-xs md:text-sm focus:outline-none focus:border-blue-500 shadow-inner" />
                     <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs md:text-sm px-5 md:px-6 rounded-xl border-none cursor-pointer">전송</button>
                   </div>
                 </form>
@@ -492,7 +532,7 @@ export default function App() {
 
       </main>
 
-      {/* ================= 📱 모바일 하단 고정 앱 바 ================= */}
+      {/* ================= 📱 모바일 하단 고정형 네비게이션 바 ================= */}
       {activeReportIdx !== null && (
         <nav className="w-full bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 h-16 flex z-40 select-none shadow-xl md:hidden">
           {menuItems.map((item) => {
