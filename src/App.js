@@ -9,9 +9,30 @@ export default function App() {
   const menuItems = ['자료검색', '자료분석', '챗봇'];
 
   const defaultCards = [
-    { id: 1, title: '경기도 정류소별 승하차 인원 정보', subtitle: '경기도 교통정보센터', content: '경기도 내 버스정류소별 시간대별 승하차 승객 수 집계 데이터입니다. 대중교통 이용 패턴 분석에 적합합니다.' },
-    { id: 2, title: '서울시 공공자전거 이용정보 (시간대별)', subtitle: '서울특별시 교통기획관', content: '따릉이 이용자들의 대여/반납 정류소 및 이용 시간, 이동 거리 데이터를 제공합니다. 환경 및 교통 분석용입니다.' },
-    { id: 3, title: '전국 무인교통단속카메라 표준데이터', subtitle: '행정안전부', content: '전국 지자체 및 경찰청에서 관리하는 무인 교통단속 카메라의 위치, 단속 구분, 제한속도 정보입니다.' },
+    { 
+      id: 1, 
+      title: '경기도 정류소별 승하차 인원 정보', 
+      subtitle: '경기도 교통정보센터', 
+      content: '경기도 내 버스정류소별 시간대별 승하차 승객 수 집계 데이터입니다. 대중교통 이용 패턴 분석에 적합합니다.',
+      keywords: ['#교통복지', '#광역거버넌스', '#수요예측', '#도시교통실'],
+      link: 'https://data.gg.go.kr/portal/data/service/selectServicePage.do?page=1&rows=10&sort=INF_ID&order=desc&infId=O69O79M4I9O6I10884' 
+    },
+    { 
+      id: 2, 
+      title: '서울시 공공자전거 이용정보 (시간대별)', 
+      subtitle: '서울특별시 교통기획관', 
+      content: '따릉이 이용자들의 대여/반납 정류소 및 이용 시간, 이동 거리 데이터를 제공합니다. 환경 및 교통 분석용입니다.',
+      keywords: ['#친환경교통', '#마이크로모빌리티', '#공공인프라', '#시민행동패턴'],
+      link: 'https://data.seoul.go.kr/dataList/OA-21225/s/dataView.do' 
+    },
+    { 
+      id: 3, 
+      title: '전국 무인교통단속카메라 표준데이터', 
+      subtitle: '행정안전부', 
+      content: '전국 지자체 및 경찰청에서 관리하는 무인 교통단속 카메라의 위치, 단속 구분, 제한속도 정보입니다.',
+      keywords: ['#공공안전', '#지방자치법규', '#위험규제', '#경찰청연계'],
+      link: 'https://www.data.go.kr/data/15021139/standard.do' 
+    },
   ];
 
   const [dummyCards, setDummyCards] = useState([]);
@@ -32,15 +53,24 @@ export default function App() {
   const [isReportSelectorOpen, setIsReportSelectorOpen] = useState(false);
 
   const [statTopic, setStatTopic] = useState('');
-  const [statMethod, setStatMethod] = useState('auto'); 
+  
+  // 3️⃣ 변경 사양: 방법론 변수를 드롭다운 기본값 대신 서술형 빈 문자열('') 상태로 초기화
+  const [statMethod, setStatMethod] = useState(''); 
   const [statFile, setStatFile] = useState(null);
   const [isStatRunning, setIsStatRunning] = useState(false);
+
+  const [isTrashOpen, setIsTrashOpen] = useState(false);
+  const [isDragOverTrash, setIsDragOverTrash] = useState(false);
+
+  // 드래그 중인 카드의 원래 인덱스를 추적하기 위한 상태 관리 변수 신설
+  const [draggedItemIdx, setDraggedItemIdx] = useState(null);
 
   useEffect(() => {
     if (selectedAnalysisData) {
       setStatTopic(selectedAnalysisData.capturedTopic || '대중교통 이용 패턴 및 거버넌스 인프라 상관관계 분석');
     }
     setStatFile(null);
+    setStatMethod(''); // 방법론 서술창 초기화
     setIsStatRunning(false);
   }, [selectedAnalysisData]);
 
@@ -103,7 +133,7 @@ export default function App() {
     if (chatInput.includes("법") || targetTab === "법") {
       aiResponseText = `⚖️ [AI 법률 위계 분석]: 상위 법령의 위임에 기초하여 '광역조례' 계통이 활성화되어 있습니다. 특별법 우선 적용 원칙을 제안서 서론에 배치하세요.`;
     } else if (chatInput.includes("조직") || targetTab === "조직") {
-      aiResponseText = `🏢 [AI 조직 거버넌스 분석]: 국가 부처는 제외되며, 경기로 본청 직제 트리에 종속됩니다. 산하 경기교통공사 에이전시의 실무 매핑을 명시하세요.`;
+      aiResponseText = `🏢 [AI 조직 거버넌스 분석]: 국가 부처는 제외되며, 경기도청 본청 직제 트리에 종속됩니다. 산하 경기교통공사 에이전시의 실무 매핑을 명시하세요.`;
     } else if (chatInput.includes("목적") || targetTab === "목적") {
       aiResponseText = `🎯 [AI 기능·목적 통합 분석]: 거시적 정책 기능 단락에서 미시적 실·국·과 수행 목적성으로 이어지는 수직 플로우를 기반으로 가설 검정 기대효과를 다듬으세요.`;
     }
@@ -158,7 +188,6 @@ export default function App() {
     }
   };
 
-  // ⭐ 도움말 탭의 '클래스 특징 및 제공 이유' 맥락을 각 섹션 데이터셋에 정밀하게 투영 보충
   const handleSaveData = (card) => {
     if (activeReportIdx === null) return;
     const currentSaved = savedDataByReport[activeReportIdx] || [];
@@ -169,8 +198,8 @@ export default function App() {
       isUploaded: false, 
       fileName: '', rows: '-', cols: '-', size: '-',
       capturedTopic: searchQuery.trim() !== '' ? searchQuery : '대중교통 인프라 이용 분석',
+      isDeleted: false,
 
-      // ⚖️ 법 탭 데이터 보충 (제도적 타당성, 정책 권한 범위 기술)
       lawHierarchy: [
         { tierTitle: '법령', tierContent: '대중교통의 육성 및 이용에 관한 법률 (국가 위임 입법 기틀)' },
         { tierTitle: '광역조례', tierContent: '경기도 여객자동차 운수사업 재정지원 및 개방 조례' },
@@ -179,16 +208,14 @@ export default function App() {
       activeLawTier: '광역조례', 
       lawDetail: '본 데이터셋은 자치 행정 활동의 제도적 기반이 되는 법적 근거와 상하 위계 구조를 명시합니다. 이용자는 특별법 우선 원칙에 따른 권한 범위와 규제 여부를 검토하여, 연구 기획서의 제도적 타당성을 완벽하게 증명할 수 있습니다.',
       
-      // 🎯 목적 탭 데이터 보충 (거시적 기능 -> 미시적 목적 수직 플로우 및 우선순위 단서 명시)
       purposeHierarchy: [
         { type: '거시적 기능 (정부 고유 영역)', title: '정책 분야', content: '지역개발 및 대중교통망 확충 정책 (국가 조직이 존재하는 한 지속되는 본질적·장기적 영역)' },
         { type: '거시적 기능 (정부 고유 영역)', title: '정책 영역 & 대기능', content: '광역 대중교통 체계 불균형 해소 및 데이터 기반 행정 고도화 기능' },
-        { type: '미시적 목적 (구체적 목표)', title: '실·국 단위 목적 (도시교통실)', content: '도민 중심의 안전하고 편리한 맞춤형 교통 인프라 공급 및 거버넌스 최적화' },
-        { type: '미시적 목적 (구체적 목표)', title: '과 단위 목적 (버스관리과)', content: '실시간 버스 노선 효율화 및 정류소 혼잡도 완화를 통한 대중교통 이용률 제고' },
-        { type: '미시적 목적 (구체적 목표)', title: '실행 단위 연계 (법정계획)', content: '지방대중교통계획 연차별 예산 집행 및 실행 사업 중복성 검토 레퍼런스' }
+        { type: '미시적 관점 (수행 목적)', title: '실·국 단위 목적 (도시교통실)', content: '도민 중심의 안전하고 편리한 맞춤형 교통 인프라 공급 및 거버넌스 최적화' },
+        { type: '미시적 관점 (수행 목적)', title: '과 단위 목적 (버스관리과)', content: '실시간 버스 노선 효율화 및 정류소 혼잡도 완화를 통한 대중교통 이용률 제고' },
+        { type: '미시적 관점 (수행 목적)', title: '실행 단위 연계 (법정계획)', content: '지방대중교통계획 연차별 예산 집행 및 실행 사업 중복성 검토 레퍼런스' }
       ],
 
-      // 🏢 조직 탭 데이터 보충 (책임 소재 명확화, 실제 행정 전달 체계 입체화)
       orgHierarchy: [
         { level: 'Level 1', title: '지자체', name: '경기도청 (거버넌스 총괄)' },
         { level: 'Level 2', title: '도지사', name: '경기도지사 (최종 집행권자)' },
@@ -206,19 +233,81 @@ export default function App() {
   };
 
   const handleRemoveSavedData = (dataId, e) => {
-    e.stopPropagation();
-    if (window.confirm("이 데이터를 분석 보관함에서 삭제하시겠습니까?")) {
-      const currentSaved = savedDataByReport[activeReportIdx] || [];
-      const filtered = currentSaved.filter(item => item.id !== dataId);
-      setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: filtered }));
-      if (selectedAnalysisData && selectedAnalysisData.id === dataId) setSelectedAnalysisData(null);
-    }
+    if (e) e.stopPropagation();
+    if (!window.confirm("선택한 데이터를 허브 목록에서 삭제(휴지통 이동)하시겠습니까?")) return;
+
+    const currentSaved = savedDataByReport[activeReportIdx] || [];
+    const updated = currentSaved.map(item => item.id === dataId ? { ...item, isDeleted: true } : item);
+    setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: updated }));
+  };
+
+  // 1️⃣ 자료간 드래그 앤 드롭 위치 정렬 처리기 (Reorder)
+  const handleDragStart = (e, index, id) => {
+    setDraggedItemIdx(index);
+    e.dataTransfer.setData("text/plain", id);
+  };
+
+  const handleDragOverCard = (e, index) => {
+    e.preventDefault();
+    if (draggedItemIdx === null || draggedItemIdx === index) return;
+  };
+
+  const handleDropOnCard = (e, targetIndex) => {
+    e.preventDefault();
+    if (draggedItemIdx === null || draggedItemIdx === targetIndex) return;
+
+    const currentSaved = savedDataByReport[activeReportIdx] || [];
+    const updated = [...currentSaved];
+
+    // 배열 내 순서 맞바꾸기 기법 발동
+    const [draggedItem] = updated.splice(draggedItemIdx, 1);
+    updated.splice(targetIndex, 0, draggedItem);
+
+    setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: updated }));
+    setDraggedItemIdx(null);
+    console.log("프론트엔드 배치 인덱스 정렬 리오더링 반영 완결.");
+  };
+
+  const handleDropOnTrash = (e) => {
+    e.preventDefault();
+    setIsDragOverTrash(false);
+    const dataId = parseInt(e.dataTransfer.getData("text/plain"), 10);
+    if (!dataId) return;
+
+    const currentSaved = savedDataByReport[activeReportIdx] || [];
+    const updated = currentSaved.map(item => item.id === dataId ? { ...item, isDeleted: true } : item);
+    setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: updated }));
+  };
+
+  const handleRestoreItem = (id) => {
+    const currentSaved = savedDataByReport[activeReportIdx] || [];
+    const rolledBack = currentSaved.map(item => item.id === id ? { ...item, isDeleted: false } : item);
+    setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: rolledBack }));
+  };
+
+  const handleHardDelete = (id, title) => {
+    if (!window.confirm(`[${title}] 데이터를 영구 삭제하시겠습니까?`)) return;
+    const currentSaved = savedDataByReport[activeReportIdx] || [];
+    const filtered = currentSaved.filter(item => item.id !== id);
+    setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: filtered }));
+  };
+
+  const handleEmptyTrash = () => {
+    const currentSaved = savedDataByReport[activeReportIdx] || [];
+    const trashCount = currentSaved.filter(item => item.isDeleted).length;
+    if (trashCount === 0) { alert("비울 휴지통 내역이 없습니다."); return; }
+    if (!window.confirm(`휴지통에 있는 ${trashCount}개의 데이터를 모두 영구 삭제하시겠습니까?`)) return;
+
+    const clearSaved = currentSaved.filter(item => !item.isDeleted);
+    setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: clearSaved }));
+    alert("휴지통이 깨끗하게 비워졌습니다!");
+    setIsTrashOpen(false);
   };
 
   const handleRunStatisticalAnalysis = (e) => {
     e.preventDefault();
     if (!statTopic.trim()) { alert("분석하고자 하는 구체적인 연구 주제를 입력해 주세요!"); return; }
-    if (!statFile) { alert("통계 검증을 수행할 원본 분석 파일(.csv)을 선택하여 부착해 주세요!"); return; }
+    if (!statFile) { alert("통계 검증을 수행할 원본 분석 파일을 선택하여 부착해 주세요!"); return; }
 
     setIsStatRunning(true);
     const currentSaved = savedDataByReport[activeReportIdx] || [];
@@ -229,15 +318,48 @@ export default function App() {
       return item;
     });
     setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: updated }));
-    alert("입력하신 주제와 부착된 원본 소스 데이터를 기반으로 AI 계량 검정 R-Log 모델 연동에 성공했습니다!");
+    alert("입력하신 주제와 부착된 소스 데이터를 기반으로 AI 정량 계량 검정 로그 모델 연동에 성공했습니다!");
   };
 
   const currentReportSavedData = activeReportIdx !== null ? (savedDataByReport[activeReportIdx] || []) : [];
+  const currentVisibleSavedData = currentReportSavedData.filter(item => !item.isDeleted);
+  const currentTrashData = currentReportSavedData.filter(item => item.isDeleted);
   const currentChatHistory = chatHistoryByReport[activeReportIdx] || [{ sender: 'ai', text: '안녕하세요! 현재 수집한 공공데이터와 법령 지표를 기반으로 공모전 제안서 스토리라인을 다듬어 드릴게요.' }];
 
   return (
     <div className="flex h-screen w-full bg-gray-50 text-gray-800 font-sans m-0 p-0 overflow-hidden" onMouseUp={handleTextSelection}>
       
+      {/* 휴지통 모달 */}
+      {isTrashOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" onClick={() => setIsTrashOpen(false)}>
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl text-left select-none overflow-hidden flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center border-b pb-3 mb-4">
+              <h4 className="text-base font-black text-gray-900 m-0 flex items-center gap-1.5"><span>🗑️</span> 버려진 데이터 보관소</h4>
+              <button onClick={() => setIsTrashOpen(false)} className="bg-gray-100 hover:bg-gray-200 border-none px-2.5 py-1.5 rounded-xl text-xs font-bold text-gray-500 cursor-pointer">닫기</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 mb-4">
+              {currentTrashData.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-12 m-0">휴지통이 깨끗하게 비어 있습니다.</p>
+              ) : (
+                currentTrashData.map(item => (
+                  <div key={item.id} className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex flex-col gap-2">
+                    <span className="text-xs md:text-sm font-bold text-gray-900 truncate block">{item.title}</span>
+                    <div className="flex justify-end gap-2 border-t border-gray-100/70 pt-2">
+                      <button onClick={() => handleRestoreItem(item.id)} className="bg-gray-950 hover:bg-gray-800 text-white font-bold text-[10px] px-2.5 py-1 rounded-md border-none cursor-pointer transition-all">복구</button>
+                      <button onClick={() => handleHardDelete(item.id, item.title)} className="bg-red-50 hover:bg-red-100 text-red-600 font-bold text-[10px] px-2.5 py-1 rounded-md border border-red-200 cursor-pointer transition-all">영구삭제</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            {currentTrashData.length > 0 && (
+              <button onClick={handleEmptyTrash} className="w-full bg-red-600 hover:bg-red-700 text-white font-black text-xs py-3 rounded-xl border-none cursor-pointer text-center shadow-sm transition-all">🔥 휴지통 완전히 비우기</button>
+            )}
+          </div>
+        </div>
+      )}
+
       {dragPopup.visible && (
         <button onClick={handleAskDragText} className="drag-popup-btn absolute z-[999] bg-gray-950 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-2xl border-none cursor-pointer hover:bg-blue-600 hidden md:flex items-center gap-1.5 animate-bounce" style={{ left: `${dragPopup.x}px`, top: `${dragPopup.y}px` }}>
           <span>💬</span> 챗봇에서 질문하기
@@ -295,8 +417,9 @@ export default function App() {
       </aside>
 
       {/* ================= MAIN DISPLAY VIEWPORT ================= */}
-      <main className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto box-border items-center justify-center relative pb-20 md:pb-8">
+      <main className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto box-border items-center justify-start relative pb-20 md:pb-8">
         
+        {/* 📱 모바일 전용 헤더 바 */}
         {activeReportIdx !== null && (
           <div className="w-full bg-white border border-gray-200 rounded-2xl p-3 flex justify-between items-center md:hidden mb-4 shadow-sm select-none shrink-0 relative z-30">
             <button 
@@ -312,12 +435,12 @@ export default function App() {
           <div className="w-full max-w-xl text-center bg-white border border-gray-200 rounded-3xl p-8 md:p-12 shadow-md my-auto">
             <div className="text-5xl md:text-6xl mb-6">🚀</div>
             <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-3">공공데이터 매핑 시스템</h1>
-            <button onClick={handleCreateReport} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm md:text-base px-6 md:px-8 py-3.5 md:py-4 rounded-2xl border-none cursor-pointer shadow transition-all">✨ 첫 보고서 생성</button>
+            <button onClick={handleCreateReport} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm md:text-base px-6 md:px-8 py-3.5 md:py-4 rounded-2xl border-none cursor-pointer shadow transition-all">✨ 첫 보고서 생성하고 시작하기</button>
           </div>
         ) : (
+          
           <div className="w-full max-w-4xl h-full flex flex-col items-center justify-start">
             
-            {/* PC 상단 가이드 브레드크럼 */}
             <div className="w-full border-b border-gray-200 pb-2 mb-4 text-sm text-gray-400 font-medium text-left hidden md:flex justify-between items-center">
               <span>{reports[activeReportIdx]} &gt; {currentMenu} {selectedAnalysisData && ` > ${selectedAnalysisData.title} [${currentSubTab}]`}</span>
               {currentMenu === '자료분석' && selectedAnalysisData && (
@@ -336,17 +459,27 @@ export default function App() {
 
                 <div className={`w-full space-y-4 md:space-y-6 mt-2 transition-all duration-500 ${isSearched ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
                   {dummyCards.map((card) => (
-                    <div key={card.id} className="bg-white md:bg-gray-100 rounded-2xl p-5 md:p-6 shadow-sm md:shadow-md relative border border-gray-200 text-left">
+                    <div key={card.id} className="bg-white md:bg-gray-100 rounded-3xl p-5 md:p-6 shadow-sm md:shadow-md relative border border-gray-200 text-left">
                       <button onClick={() => handleDeleteCard(card.id)} className="absolute top-4 right-4 bg-none border-none text-gray-400 hover:text-red-500 text-lg cursor-pointer">🗑️</button>
-                      <h3 className="text-base md:text-xl font-bold text-gray-950 mb-1 leading-snug">{card.title}</h3>
+                      <h3 className="text-base md:text-xl font-bold mb-1 leading-snug">
+                        <a href={card.link} target="_blank" rel="noopener noreferrer" className="text-gray-950 no-underline hover:text-blue-600 active:text-blue-700 hover:underline cursor-pointer transition-colors duration-150 inline-block">{card.title}</a>
+                      </h3>
                       <p className="text-[11px] md:text-xs text-gray-400 font-semibold mb-4">{card.subtitle}</p>
-                      <div className="mb-4 md:mb-6">
-                        <span className="font-bold text-xs md:text-base block mb-1">요약</span>
+                      <div className="mb-4">
+                        <span className="font-bold text-xs md:text-sm block mb-1">요약</span>
                         <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0">{card.content}</p>
                       </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                      <div className="mb-5 md:mb-6">
+                        <span className="font-bold text-xs md:text-sm block mb-1.5 text-gray-800">키워드</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {card.keywords.map((kw, kwIdx) => (
+                            <span key={kwIdx} className="bg-gray-200/70 text-gray-800 text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-lg shadow-sm">{kw}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-100 md:border-none">
                         <span className="text-xs font-semibold text-gray-400">주제 적합도: ★★★☆☆</span>
-                        <button onClick={() => handleSaveData(card)} className="bg-gray-900 text-white font-semibold text-xs md:text-sm px-4 md:px-5 py-2 rounded-xl hover:bg-gray-800 border-none cursor-pointer">담기</button>
+                        <button onClick={() => handleSaveData(card)} className="bg-gray-950 text-white font-bold text-xs md:text-sm px-5 py-2.5 rounded-xl hover:bg-gray-800 border-none cursor-pointer shadow-sm">담기</button>
                       </div>
                     </div>
                   ))}
@@ -356,29 +489,58 @@ export default function App() {
 
             {/* 2. 자료분석 섹션 */}
             {currentMenu === '자료분석' && (
-              <div className="w-full font-sans text-left select-text h-full overflow-hidden flex flex-col">
+              <div className="w-full font-sans text-left select-text h-full flex flex-col">
                 
                 {!selectedAnalysisData ? (
-                  <div className="w-full mt-2 overflow-y-auto pr-2 flex-1">
-                    <div className="mb-6 border-b pb-4 hidden md:block">
-                      <h1 className="text-3xl font-extrabold text-gray-900">📊 자료 종합 분석 허브</h1>
+                  <div className="w-full mt-2 overflow-y-auto pr-2 flex-1 flex flex-col">
+                    <div className="mb-6 border-b pb-4 flex justify-between items-center shrink-0">
+                      <div>
+                        <h1 className="text-3xl font-extrabold text-gray-900">📊 자료 종합 분석 허브</h1>
+                        {/* 1️⃣ 변경 안내 주석 반영 */}
+                        <p className="text-sm text-gray-500 mt-1">드래그앤드롭을 통해 카드간 순서를 마음대로 셔플하거나 우측 휴지통으로 버려 보세요.</p>
+                      </div>
+
+                      <div 
+                        onDragOver={(e) => { e.preventDefault(); setIsDragOverTrash(true); }}
+                        onDragLeave={() => setIsDragOverTrash(false)}
+                        onDrop={handleDropOnTrash}
+                        onClick={() => setIsTrashOpen(true)}
+                        className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all select-none w-36 h-[90px] ${
+                          isDragOverTrash ? 'border-red-500 bg-red-50 text-red-600 scale-105 shadow-md font-bold' : 'border-gray-300 bg-white text-gray-500 hover:border-gray-400 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="text-2xl mb-0.5">🗑️ 휴지통</span>
+                        <span className="text-[10px] bg-gray-900 text-white font-extrabold px-1.5 py-0.5 rounded-full shadow-sm">{currentTrashData.length}개 비축됨</span>
+                      </div>
                     </div>
 
-                    {currentReportSavedData.length === 0 ? (
-                      <div className="border-2 border-dashed border-gray-300 rounded-3xl py-16 text-center text-gray-400 bg-white shadow-sm max-w-3xl mx-auto px-6 text-xs md:text-sm">
+                    {currentVisibleSavedData.length === 0 ? (
+                      <div className="border-2 border-dashed border-gray-300 rounded-3xl py-16 text-center text-gray-400 bg-white shadow-sm max-w-3xl mx-auto px-6 text-xs md:text-sm my-auto">
+                        <div className="text-4xl md:text-5xl mb-4">📥</div>
                         <h3 className="text-base md:text-lg font-bold text-gray-800 mb-1">수집된 데이터셋이 없습니다</h3>
-                        <p className="text-gray-400 leading-relaxed">자료검색 메뉴에서 기획서에 담을 공공데이터를 담아 오세요.</p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                        {currentReportSavedData.map((data) => (
-                          <div key={data.id} className="bg-white rounded-2xl border border-gray-200 p-5 md:p-6 shadow-sm flex flex-col justify-between relative">
+                        {currentVisibleSavedData.map((data, index) => (
+                          <div 
+                            key={data.id} 
+                            draggable="true"
+                            // 1️⃣ 핵심 드래그 앤 드롭 정렬 상호작용 트리거 추가
+                            onDragStart={(e) => handleDragStart(e, index, data.id)}
+                            onDragOver={(e) => handleDragOverCard(e, index)}
+                            onDrop={(e) => handleDropOnCard(e, index)}
+                            className="bg-white rounded-2xl border-2 border-gray-100 hover:border-blue-400 p-5 md:p-6 shadow-sm flex flex-col justify-between relative cursor-grab active:cursor-grabbing transition-all hover:shadow-md"
+                          >
                             <div>
                               <div className="flex justify-between items-center mb-2 pr-6">
                                 <span className="text-[10px] md:text-xs text-blue-600 font-bold uppercase">{data.subtitle}</span>
+                                <span className="text-[10px] text-gray-400 font-medium hidden md:inline">🖐️ 정렬/삭제 드래그</span>
                               </div>
                               <button onClick={(e) => handleRemoveSavedData(data.id, e)} className="absolute top-5 right-5 bg-none border-none text-gray-300 hover:text-red-500 text-lg cursor-pointer">🗑️</button>
-                              <h3 className="text-base md:text-xl font-bold text-gray-950 mb-6 pr-6 leading-tight">{data.title}</h3>
+                              
+                              <h3 className="text-base md:text-xl font-bold mb-6 pr-6 leading-tight">
+                                <a href={data.link} target="_blank" rel="noopener noreferrer" className="text-gray-950 no-underline hover:text-blue-600 active:text-blue-700 hover:underline cursor-pointer transition-colors duration-150 inline-block">{data.title}</a>
+                              </h3>
                             </div>
                             <button onClick={() => { setSelectedAnalysisData(data); setCurrentSubTab('종합'); }} className="w-full font-bold py-2.5 md:py-3 px-4 rounded-xl text-center text-xs md:text-sm border-none cursor-pointer bg-gray-900 text-white hover:bg-gray-800">대시보드 분석 스페이스 진입 ➡️</button>
                           </div>
@@ -389,10 +551,11 @@ export default function App() {
                 ) : (
                   
                   <div className="w-full mt-1 flex-1 flex flex-col overflow-hidden">
-                    <button onClick={() => setSelectedAnalysisData(null)} className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-bold px-3 py-1.5 rounded-xl text-xs cursor-pointer shadow-sm mb-4">⬅️ 자료함 목록으로</button>
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 mb-4 md:mb-6 leading-tight truncate">{selectedAnalysisData.title}</h2>
+                    <button onClick={() => setSelectedAnalysisData(null)} className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-bold px-3 py-1.5 rounded-xl text-xs cursor-pointer shadow-sm mb-4 self-start">⬅️ 자료함 목록으로</button>
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 mb-4 md:mb-6 leading-tight truncate">
+                      <a href={selectedAnalysisData.link} target="_blank" rel="noopener noreferrer" className="text-gray-900 no-underline hover:text-blue-600 active:text-blue-700 hover:underline cursor-pointer transition-colors duration-150">{selectedAnalysisData.title}</a>
+                    </h2>
 
-                    {/* 6대 서브 탭 바 */}
                     <div className="flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm mb-4 md:mb-6 gap-1 text-center overflow-x-auto whitespace-nowrap no-scrollbar md:grid md:grid-cols-6 shrink-0">
                       {subTabs.map((tab) => (
                         <button key={tab} onClick={() => setCurrentSubTab(tab)} className={`text-center py-2 md:py-2.5 px-4 md:px-0 text-xs font-bold rounded-lg cursor-pointer transition-all border-none inline-block md:block ${currentSubTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>{tab}</button>
@@ -408,12 +571,12 @@ export default function App() {
                         </div>
                       )}
 
-                      {/* 📊 통계 탭 */}
+                      {/* 📊 통계 탭: [★2번, 3번 전면 수정 사항 반영 완료] */}
                       {currentSubTab === '통계' && (
                         <div className="space-y-5 max-w-lg mx-auto">
                           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-900 leading-relaxed font-medium">
                             <span className="font-extrabold block mb-1">🤖 AI 자율 정량 검정 안내</span>
-                            데이터분석 방법을 선택하지 않고 신청하실 경우, 인공지능이 부착된 원본 CSV 파일의 데이터 규격을 자율 판독하여 가장 정합성이 높은 사회과학적 통계 분석 모델을 자동 선택하여 가동합니다.
+                            데이터분석 가설 방법론에 아무런 텍스트를 기재하지 않고 전송하실 경우, 인공지능이 부착된 다차원 파일 규격을 자율 판독하여 가장 신뢰도가 높은 사회과학 통계 분석 모델을 자율 전면 선택하여 가동합니다.
                           </div>
 
                           <form onSubmit={handleRunStatisticalAnalysis} className="space-y-4 bg-white border border-gray-100 p-5 rounded-2xl shadow-sm">
@@ -428,18 +591,19 @@ export default function App() {
                               />
                             </div>
 
+                            {/* 2️⃣ 변경 사양: (.csv) 문구를 (.csv 파일 등)으로 세련되게 완화 교체 */}
                             <div>
-                              <label className="block text-xs font-bold text-gray-700 mb-1.5">2. 통계 원본 소스 파일 부착 (.csv) <span className="text-red-500">*</span></label>
+                              <label className="block text-xs font-bold text-gray-700 mb-1.5">2. 통계 원본 소스 파일 부착 (.csv 파일 등) <span className="text-red-500">*</span></label>
                               <div className="flex gap-2">
                                 <input 
                                   type="text" 
                                   readOnly 
-                                  value={statFile ? statFile : '선택된 로컬 파일 없음'} 
+                                  value={statFile ? statFile : '선택된 로컬 분석 소스 없음'} 
                                   className="flex-1 bg-gray-50 border border-gray-300 px-3 py-2 rounded-xl text-xs text-gray-500 font-mono" 
                                 />
                                 <button 
                                   type="button" 
-                                  onClick={() => setStatFile(`raw_data_${selectedAnalysisData.id}_v1.csv`)} 
+                                  onClick={() => setStatFile(`raw_source_stream_${selectedAnalysisData.id}.xlsx`)} 
                                   className="bg-gray-100 hover:bg-gray-200 border border-gray-300 font-bold px-3 py-2 rounded-xl text-xs cursor-pointer text-gray-700 whitespace-nowrap"
                                 >
                                   파일 선택
@@ -447,31 +611,30 @@ export default function App() {
                               </div>
                             </div>
 
+                            {/* 3️⃣ 변경 사양: 딱딱한 드롭다운 박스를 과감히 해체하고 고유 기획안 기반 '서술형 단락 인풋'으로 마이그레이션 */}
                             <div>
-                              <label className="block text-xs font-bold text-gray-700 mb-1.5">3. 희망하는 계량 가설 검정 방법론 (선택)</label>
-                              <select 
-                                value={statMethod} 
+                              <label className="block text-xs font-bold text-gray-700 mb-1.5">3. 희망하는 계량 가설 검정 방법론 (서술형 기재)</label>
+                              <input 
+                                type="text"
+                                value={statMethod}
                                 onChange={(e) => setStatMethod(e.target.value)}
-                                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:border-blue-600 cursor-pointer font-medium"
-                              >
-                                <option value="auto">AI가 데이터에 맞춰 자율 선택 (권장)</option>
-                                <option value="regression">다중 선형 회귀 분석 (OLS Regression)</option>
-                                <option value="anova">분산 분석 (ANOVA Test)</option>
-                                <option value="logit">로지스틱 회귀 모델 (Logit model)</option>
-                              </select>
+                                placeholder="예: OLS 회귀분석, ANOVA 검정, 패널 데이터 분석 등 (미입력 시 AI 자율 분석)"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-xs md:text-sm focus:outline-none focus:border-blue-600 box-border font-medium"
+                              />
+                              <p className="text-[10px] text-gray-400 mt-1.5 pl-0.5">※ 공란으로 비워둔 채 구동하면 메타데이터 판독 기반 AI 자동 알고리즘 매핑이 적용됩니다.</p>
                             </div>
 
                             <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs md:text-sm py-3 rounded-xl border-none cursor-pointer shadow-sm transition-all">
-                              🚀 AI 통계 검정 모델 및 R-Log 추출 기동
+                              🚀 AI 계량 가설 모형 검증 및 통계 시뮬레이션 가동
                             </button>
                           </form>
 
                           {isStatRunning && (
                             <div className="space-y-2 animate-fade">
-                              <span className="text-[11px] font-bold text-green-600 block">✓ AI 엔진 연계 계량 검정 출력 완료</span>
+                              <span className="text-[11px] font-bold text-green-600 block">✓ AI 통계 분석 솔루션 R-Log 스트림 파싱 완료</span>
                               <pre className="text-[11px] md:text-xs text-green-400 bg-gray-950 p-4 rounded-xl font-mono leading-relaxed overflow-x-auto shadow-inner">
-{`> # 분석주제: ${statTopic}
-> # 적용공정: ${statMethod === 'auto' ? 'AI 판독형 가설 모델 자율 적용' : statMethod}
+{`> # 가설 타겟 주제: ${statTopic}
+> # 실무 적용 방법론: ${statMethod.trim() === '' ? '미지정에 따른 AI 자율 판독형 회귀 매핑 프로세스 가동' : statMethod}
 > summary(lm(Main_Target ~ Transit_Index + Location_Factor, data = ${statFile}))
 
 Coefficients:
@@ -485,7 +648,7 @@ Location_Factor  0.241521   0.024151    10.00 1.45e-12 ***`}
                         </div>
                       )}
 
-                      {/* ⚖️ 법 탭: 도움말 맥락 기반 텍스트 보강 완료 */}
+                      {/* 법 탭 */}
                       {currentSubTab === '법' && (
                         <div className="space-y-4">
                           <div className="w-full flex flex-col items-center justify-center py-4 select-none max-w-lg mx-auto">
@@ -514,7 +677,7 @@ Location_Factor  0.241521   0.024151    10.00 1.45e-12 ***`}
                         </div>
                       )}
 
-                      {/* 🎯 목적 탭: 도움말 맥락 기반 텍스트 보강 완료 */}
+                      {/* 목적 탭 */}
                       {currentSubTab === '목적' && (
                         <div className="space-y-4">
                           <div className="w-full flex flex-col items-center justify-center py-4 select-none max-w-lg mx-auto">
@@ -536,14 +699,12 @@ Location_Factor  0.241521   0.024151    10.00 1.45e-12 ***`}
                           </div>
                           <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-600 leading-relaxed max-w-lg mx-auto shadow-inner">
                             <p className="font-extrabold text-emerald-900 border-b border-emerald-200 pb-1.5 mb-2">🎯 정책 우선순위 및 기획 수립 단서</p>
-                            <p className="m-0 leading-relaxed font-medium text-xs">
-                              상단의 거시적 기능 분류 모델을 통해 정부 활동의 본질적·장기적 틀을 추적하고, 하단의 미시적 과 단위 목적과 예산 집행 단위를 매핑하여 새로운 정책 대안을 설계하거나 중복 실행 사업을 사전 필터링하는 강력한 레퍼런스로 작동합니다.
-                            </p>
+                            <p className="m-0 leading-relaxed font-medium text-xs">상단의 거시적 기능 분류 모델을 통해 정부 활동의 본질적·장기적 틀을 추적하고, 하단의 미시적 과 단위 목적과 예산 집행 단위를 매핑하여 새로운 정책 대안을 설계하거나 중복 실행 사업을 사전 필터링하는 강력한 레퍼런스로 작동합니다.</p>
                           </div>
                         </div>
                       )}
 
-                      {/* 🏢 조직 탭: 도움말 맥락 기반 텍스트 보강 완료 */}
+                      {/* 조직 탭 */}
                       {currentSubTab === '조직' && (
                         <div className="space-y-5">
                           <div className="w-full bg-white border border-gray-200 rounded-2xl p-5 shadow-sm max-w-xl mx-auto box-border">
@@ -575,16 +736,14 @@ Location_Factor  0.241521   0.024151    10.00 1.45e-12 ***`}
                         </div>
                       )}
 
-                      {/* 💡 도움말 탭 보드 (기존 유지 복원) */}
+                      {/* 도움말 탭 */}
                       {currentSubTab === '도움말' && (
-                        <div className="space-y-6 text-left animate-fade text-gray-800">
+                        <div className="space-y-6 text-left text-gray-800">
                           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 md:p-5 shadow-sm">
                             <h4 className="text-sm md:text-base font-extrabold text-blue-900 m-0 mb-1 flex items-center gap-1.5">
                               <span>💡</span> 공공데이터 매핑 프레임워크 안내
                             </h4>
-                            <p className="text-xs md:text-sm text-blue-700 leading-relaxed m-0 font-medium">
-                              본 시스템은 단순 수치 지표의 한계를 넘어, 데이터가 생성되고 집행되는 행정 지형도를 다각도로 연계합니다. 각 분석 클래스(Tab)의 핵심 특징과 활용 목적은 아래와 같습니다.
-                            </p>
+                            <p className="text-xs md:text-sm text-blue-700 leading-relaxed m-0 font-medium">본 시스템은 단순 수치 지표의 한계를 넘어, 데이터가 생성되고 집행되는 행정 지형도를 다각도로 연계합니다. 각 분석 클래스(Tab)의 핵심 특징과 활용 목적은 아래와 같습니다.</p>
                           </div>
 
                           <div className="space-y-4">
@@ -593,9 +752,7 @@ Location_Factor  0.241521   0.024151    10.00 1.45e-12 ***`}
                                 <span className="bg-gray-100 text-gray-800 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-md">종합</span>
                                 <h5 className="text-xs md:text-sm font-bold text-gray-950 m-0">데이터셋 메타 개요 요약</h5>
                               </div>
-                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">
-                                행정 목적 달성을 위해 계량 수집된 지표 데이터의 기본 명세를 요약합니다. 본격적인 다차원 분석 전 데이터셋의 정량적 정체성을 빠르게 체크하도록 돕습니다.
-                              </p>
+                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">행정 목적 달성을 위해 계량 수집된 지표 데이터의 기본 명세를 요약합니다. 본격적인 다차원 분석 전 데이터셋의 정량적 정체성을 빠르게 체크하도록 돕습니다.</p>
                             </div>
 
                             <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm hover:border-gray-300 transition-colors">
@@ -603,9 +760,7 @@ Location_Factor  0.241521   0.024151    10.00 1.45e-12 ***`}
                                 <span className="bg-blue-100 text-blue-800 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-md">기능</span>
                                 <h5 className="text-xs md:text-sm font-bold text-gray-950 m-0">거시적·장기적 정책 영역 분석</h5>
                               </div>
-                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">
-                                시대가 변해도 국가라는 조직이 존재하는 한 쉽게 바뀌지 않는 정부 고유의 본질적·장기적 업무 영역을 정의합니다. 이용자가 파편화된 데이터 속에서 정부 활동의 큰 틀과 거시적인 흐름을 직관적으로 파악할 수 있도록 돕습니다.
-                              </p>
+                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">시대가 변해도 국가라는 조직이 존재하는 한 쉽게 바뀌지 않는 정부 고유의 본질적·장기적 업무 영역을 정의합니다. 이용자가 파편화된 데이터 속에서 정부 활동의 큰 틀과 거시적인 흐름을 직관적으로 파악할 수 있도록 돕습니다.</p>
                             </div>
 
                             <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm hover:border-gray-300 transition-colors">
@@ -613,9 +768,7 @@ Location_Factor  0.241521   0.024151    10.00 1.45e-12 ***`}
                                 <span className="bg-purple-100 text-purple-800 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-md">법률</span>
                                 <h5 className="text-xs md:text-sm font-bold text-gray-950 m-0">제도적 근거 및 법령 위계 분석</h5>
                               </div>
-                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">
-                                행정 활동의 제도적 기반이 되는 법적 근거와 상하 법령의 위계구조를 제공. 이용자가 해당 데이터와 관련된 정책의 권한 범위, 규제 여부 및 제도적 타당성을 명확히 파악할 수 있도록 도움을 줍니다.
-                              </p>
+                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">행정 활동의 제도적 기반이 되는 법적 근거와 상하 법령의 위계구조를 제공. 이용자가 해당 데이터와 관련된 정책의 권한 범위, 규제 여부 및 제도적 타당성을 명확히 파악할 수 있도록 도움을 줍니다.</p>
                             </div>
 
                             <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm hover:border-gray-300 transition-colors">
@@ -623,9 +776,7 @@ Location_Factor  0.241521   0.024151    10.00 1.45e-12 ***`}
                                 <span className="bg-amber-100 text-amber-800 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-md">조직</span>
                                 <h5 className="text-xs md:text-sm font-bold text-gray-950 m-0">생산 주체 및 행정 전달 체계 파악</h5>
                               </div>
-                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">
-                                데이터를 생산하고 관리하는 주 책임 부서의 행정 계통과 관할 구조를 보여줍니다. 이를 통해 정책 집행의 책임 소재를 명확히 하고, 실제 현장에서 움직이는 행정 전달 체계를 입체적으로 이해하도록 지원합니다.
-                              </p>
+                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">데이터를 생산하고 관리하는 주 책임 부서의 행정 계통과 관할 구조를 보여줍니다. 이를 통해 정책 집행의 책임 소재를 명확히 하고, 실제 현장에서 움직이는 행정 전달 체계를 입체적으로 이해하도록 지원합니다.</p>
                             </div>
 
                             <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm hover:border-gray-300 transition-colors">
@@ -633,24 +784,8 @@ Location_Factor  0.241521   0.024151    10.00 1.45e-12 ***`}
                                 <span className="bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-md">목적</span>
                                 <h5 className="text-xs md:text-sm font-bold text-gray-950 m-0">정책적 목표 의도와 가치 위계화</h5>
                               </div>
-                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">
-                                해당 기관이 해결하고자 하는 구체적인 정책적 목표와 의도의 위계구조를 명시합니다. 정부가 현재 어떤 과제에 우선순위를 두고 있는지 보여줌으로써, 새로운 정책을 기획하거나 객관적인 성과 평가를 할 때 핵심 단서로 활용됩니다.
-                              </p>
+                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">해당 기관이 해결하고자 하는 구체적인 정책적 목표와 의도의 위계구조를 명시합니다. 정부가 현재 어떤 과제에 우선순위를 두고 있는지 보여줌으로써, 새로운 정책을 기획하거나 객관적인 성과 평가를 할 때 핵심 단서로 활용됩니다.</p>
                             </div>
-
-                            <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm hover:border-gray-300 transition-colors">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="bg-rose-100 text-rose-800 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-md">사업</span>
-                                <h5 className="text-xs md:text-sm font-bold text-gray-950 m-0">법정계획과 예산 중심의 집행 단위</h5>
-                              </div>
-                              <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 pl-1">
-                                추상적인 정책 목표가 \'법정계획\'과 예산을 통해 실현되는 구체적인 집행 단위를 보여줍니다. 이용자가 기존 실행 사업들과의 유사중복 여부를 검토하거나, 실질적으로 실행 가능한 새로운 기획안을 도출할 때 구체적인 레퍼런스로 활용됩니다.
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="pt-2 border-t border-gray-100 text-[11px] text-gray-400 font-medium leading-relaxed">
-                            💡 [Tip]: 마우스 드래그를 이용해 우측 챗봇 어시스턴트 창에 스냅샷 가설을 바로 던질 수 있습니다.
                           </div>
                         </div>
                       )}
@@ -665,28 +800,20 @@ Location_Factor  0.241521   0.024151    10.00 1.45e-12 ***`}
             {currentMenu === '챗봇' && (
               <div className="w-full max-w-3xl flex flex-col h-[70vh] md:h-[75vh] bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-left shrink-0">
                 <div className="bg-gray-950 text-white px-5 py-3.5 flex justify-between items-center select-none shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base md:text-lg">🤖</span>
-                    <div>
-                      <span className="font-bold text-xs md:text-sm block">연구 매핑 AI 어시스턴트</span>
-                      <span className="text-[9px] md:text-[10px] text-green-400 font-medium">● 행정·조직 통합 가설 엔진 가동중</span>
-                    </div>
-                  </div>
+                  <span className="font-bold text-xs md:text-sm">🤖 연구 매핑 AI 어시스턴트</span>
                 </div>
-
                 <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/50">
-                  {currentChatHistory.map((msg, mIdx) => (
-                    <div key={mIdx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] md:max-w-[80%] rounded-2xl p-3 md:p-4 shadow-sm text-xs md:text-sm leading-relaxed ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-white border text-gray-800'}`}>
+                  {currentChatHistory.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-white border'}`}>
                         <p className="m-0 whitespace-pre-wrap">{msg.text}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-
-                <form onSubmit={handleSendMessage} className="border-t border-gray-200 p-3 bg-white flex gap-2 shrink-0">
-                  <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="분석 결과나 행정적 상관관계 가설에 대해 질문하세요..." className="flex-1 px-4 py-2.5 border rounded-xl text-xs focus:outline-none focus:border-blue-500 shadow-inner" />
-                  <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 rounded-xl border-none cursor-pointer">전송</button>
+                <form onSubmit={handleSendMessage} className="border-t p-3 bg-white flex gap-2">
+                  <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="질문 내용을 입력하세요..." className="flex-1 px-4 py-2 border rounded-xl text-xs" />
+                  <button type="submit" className="bg-blue-600 text-white font-bold text-xs px-5 rounded-xl border-none">전송</button>
                 </form>
               </div>
             )}
