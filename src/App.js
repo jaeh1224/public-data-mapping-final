@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 
 export default function App() {
   const [reports, setReports] = useState([]);
-  const [openReports, setOpenReports] = useState({});
   const [activeReportIdx, setActiveReportIdx] = useState(null);
 
-  const [reportMenus, setReportMenus] = useState({});
+  // 모바일 전용 상위 메뉴 탭 상태 관리 (초기값: 자료검색)
+  const [mobileMenu, setMobileMenu] = useState('자료검색');
   const menuItems = ['자료검색', '자료분석', '챗봇'];
 
   const defaultCards = [
@@ -19,8 +19,6 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [savedDataByReport, setSavedDataByReport] = useState({});
-  
-  // ⭐ 핵심 수정: 자료분석 상세 보기 상태값 (처음엔 무조건 null)
   const [selectedAnalysisData, setSelectedAnalysisData] = useState(null);
 
   const [currentSubTab, setCurrentSubTab] = useState('종합');
@@ -29,44 +27,11 @@ export default function App() {
   const [chatHistoryByReport, setChatHistoryByReport] = useState({});
   const [chatInput, setChatInput] = useState('');
   const [attachedCapture, setAttachedCapture] = useState(null);
-  const [dragPopup, setDragPopup] = useState({ visible: false, x: 0, y: 0, text: '' });
-  const mainContentRef = useRef(null);
 
-  const handleTextSelection = () => {
-    const selection = window.getSelection();
-    const selectedText = selection.toString().trim();
+  // 모바일 전용: 상단 보고서 선택 드롭다운 팝업 열림 상태
+  const [isReportSelectorOpen, setIsReportSelectorOpen] = useState(false);
 
-    if (selectedText && currentMenu === '자료분석' && selectedAnalysisData) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setDragPopup({
-        visible: true,
-        x: rect.left + window.scrollX + (rect.width / 2) - 60,
-        y: rect.top + window.scrollY - 40,
-        text: selectedText
-      });
-    } else {
-      setDragPopup(prev => ({ ...prev, visible: false }));
-    }
-  };
-
-  useEffect(() => {
-    const handleDocumentClick = (e) => {
-      if (!e.target.closest('.drag-popup-btn')) {
-        setDragPopup(prev => ({ ...prev, visible: false }));
-      }
-    };
-    document.addEventListener('mousedown', handleDocumentClick);
-    return () => document.removeEventListener('mousedown', handleDocumentClick);
-  }, []);
-
-  const handleAskDragText = () => {
-    if (activeReportIdx === null) return;
-    setChatInput(`"${dragPopup.text}" -> 이 내용에 대해 사회과학적 관점으로 보완 설명해줘.`);
-    setReportMenus(prev => ({ ...prev, [activeReportIdx]: '챗봇' }));
-    setDragPopup(prev => ({ ...prev, visible: false }));
-  };
-
+  // 가상 화면 캡처 함수
   const handleScreenCapture = () => {
     if (!selectedAnalysisData) return;
     setAttachedCapture({
@@ -74,9 +39,10 @@ export default function App() {
       dataTitle: selectedAnalysisData.title,
       timestamp: '방금 전 캡처됨'
     });
-    alert(`현재 대시보드가 캡처되어 챗봇창에 첨부되었습니다!`);
+    alert(`현재 대시보드가 캡처되어 챗봇 탭에 대기 상태로 연동되었습니다!`);
   };
 
+  // 메시지 전송 함수
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
     if (!chatInput.trim() && !attachedCapture) return;
@@ -93,9 +59,7 @@ export default function App() {
 
     let aiResponseText = "제시해주신 데이터 구조를 분석해 볼 때, 공모전 제안서의 '기대효과' 파트에 소관 법령 지표를 결합하여 서술하는 방식이 심사위원단에 가장 설득력 있게 다가갈 것입니다.";
     if (attachedCapture) {
-      aiResponseText = `🤖 [화면 캡처 분석 결과]: 보내주신 [${attachedCapture.dataTitle} > ${attachedCapture.sourceTab}] 스냅샷 인프라를 판독했습니다. 사회과학적 계량 모형 검정으로 발전시키기 아주 정교한 구간이네요!`;
-    } else if (chatInput.includes('법')) {
-      aiResponseText = "💡 해당 공공데이터 소관 법령조항은 지자체 조례 및 국가 추진 사업 예산과 직결됩니다. 제안서의 '배경 및 필요성' 단락에 법적 근거를 최우선으로 배치하세요.";
+      aiResponseText = `🤖 [모바일 캡처 판독 완료]: 보내주신 [${attachedCapture.dataTitle} > ${attachedCapture.sourceTab}] 스냅샷을 분석했습니다. 이 지표를 제안서의 인과관계 논거로 인용하세요!`;
     }
 
     const aiMessage = { sender: 'ai', text: aiResponseText };
@@ -116,17 +80,15 @@ export default function App() {
     
     const newIdx = reports.length;
     setReports([...reports, finalName]);
-    setReportMenus(prev => ({ ...prev, [newIdx]: '자료검색' }));
-    setOpenReports(prev => ({ ...prev, [newIdx]: true }));
     setActiveReportIdx(newIdx);
+    setMobileMenu('자료검색');
     
-    // ⭐ 동기화: 새 보고서 생성 시 분석 데이터 및 상세 보기 창을 엄격하게 초기화합니다.
     setSavedDataByReport(prev => ({ ...prev, [newIdx]: [] }));
     setSelectedAnalysisData(null); 
-    
     setDummyCards([]);
     setIsSearched(false);
     setSearchQuery('');
+    setIsReportSelectorOpen(false);
   };
 
   const handleDeleteReport = (idx, e) => {
@@ -137,6 +99,7 @@ export default function App() {
       if (filtered.length === 0) setActiveReportIdx(null);
       else setActiveReportIdx(0);
       setSelectedAnalysisData(null);
+      setIsReportSelectorOpen(false);
     }
   };
 
@@ -145,14 +108,6 @@ export default function App() {
     if (searchQuery.trim() === '') { alert('검색어를 입력해주세요!'); return; }
     setDummyCards(defaultCards);
     setIsSearched(true);
-  };
-
-  const handleDeleteCard = (cardId) => {
-    if (window.confirm("이 검색 카드를 삭제하시겠습니까?")) {
-      const updatedCards = dummyCards.filter(card => card.id !== cardId);
-      setDummyCards(updatedCards);
-      if (updatedCards.length === 0) { setIsSearched(false); setSearchQuery(''); }
-    }
   };
 
   const handleSaveData = (card) => {
@@ -179,8 +134,6 @@ export default function App() {
       const currentSaved = savedDataByReport[activeReportIdx] || [];
       const filtered = currentSaved.filter(item => item.id !== dataId);
       setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: filtered }));
-      
-      // 만약 상세 보기를 띄워둔 카드를 삭제한 거라면 상세창도 닫아버립니다.
       if (selectedAnalysisData && selectedAnalysisData.id === dataId) setSelectedAnalysisData(null);
     }
   };
@@ -188,255 +141,215 @@ export default function App() {
   const handleSimulateUpload = (dataId) => {
     const currentSaved = savedDataByReport[activeReportIdx] || [];
     const updated = currentSaved.map(item => {
-      if (item.id === dataId) { return { ...item, isUploaded: true, fileName: `raw_data_stream_${dataId}.csv`, rows: '54,128', cols: '16', size: '7.8 MB' }; }
+      if (item.id === dataId) { return { ...item, isUploaded: true, fileName: `data_${dataId}.csv`, rows: '54,128', cols: '16', size: '7.8 MB' }; }
       return item;
     });
     setSavedDataByReport(prev => ({ ...prev, [activeReportIdx]: updated }));
-    alert("원본 CSV 데이터 파일 연동 성공!");
+    alert("원본 데이터 파일 연동 성공!");
     const target = updated.find(item => item.id === dataId);
     if (selectedAnalysisData && selectedAnalysisData.id === dataId) setSelectedAnalysisData(target);
   };
 
-  const currentMenu = activeReportIdx !== null ? (reportMenus[activeReportIdx] || '자료검색') : null;
+  // ⭐ 모바일 한손 터치형 원터치 질문 쏘기 함수
+  const handleQuickAsk = (text) => {
+    setChatInput(`"${text}" 이 내용의 공모전 제안서 고도화 스토리라인을 추천해줘.`);
+    setMobileMenu('챗봇');
+  };
+
   const currentReportSavedData = activeReportIdx !== null ? (savedDataByReport[activeReportIdx] || []) : [];
-  const currentChatHistory = chatHistoryByReport[activeReportIdx] || [{ sender: 'ai', text: '안녕하세요! 현재 수집한 공공데이터 분석 결과물과 정책 법령 지표를 기반으로 공모전 연구 제안서 스토리라인을 다듬어 드릴게요. 궁금한 점을 물어보세요!' }];
+  const currentChatHistory = chatHistoryByReport[activeReportIdx] || [{ sender: 'ai', text: '안녕하세요! 수집한 공공데이터 분석 결과물과 법령 지표를 기반으로 제안서 스토리라인을 다듬어 드릴게요.' }];
 
   return (
-    <div className="flex h-screen w-full bg-gray-50 text-gray-800 font-sans m-0 p-0 overflow-hidden" onMouseUp={handleTextSelection}>
+    <div className="flex flex-col h-screen w-full bg-gray-50 text-gray-800 font-sans overflow-hidden select-none">
       
-      {/* Univ AI 스타일 드래그 팝업 */}
-      {dragPopup.visible && (
-        <button onClick={handleAskDragText} className="drag-popup-btn absolute z-[999] bg-gray-950 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-2xl border-none cursor-pointer hover:bg-blue-600 flex items-center gap-1.5 animate-bounce" style={{ left: `${dragPopup.x}px`, top: `${dragPopup.y}px` }}>
-          <span>💬</span> 챗봇에서 질문하기
-        </button>
-      )}
-
-      {/* ================= SIDEBAR ================= */}
-      <aside className="w-80 bg-white border-r border-gray-200 flex flex-col p-4 z-10 select-none box-border">
-        <div className="flex items-center justify-between mb-6 px-2">
-          <h2 className="text-xl font-bold">보고서 목록</h2>
-          <button onClick={handleCreateReport} className="w-8 h-8 flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-bold text-lg border-none shadow-sm cursor-pointer">+</button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto space-y-2">
-          {reports.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-8">생성된 보고서가 없습니다.</p>
+      {/* ================= 📱 상단 모바일 헤더 바 ================= */}
+      <header className="w-full bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center z-30 shadow-sm shrink-0">
+        <div className="relative">
+          {activeReportIdx !== null ? (
+            <button 
+              onClick={() => setIsReportSelectorOpen(!isReportSelectorOpen)}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold text-sm px-3 py-2 rounded-xl border-none cursor-pointer flex items-center gap-1.5"
+            >
+              📂 {reports[activeReportIdx]} <span className="text-[10px] text-gray-400">▼</span>
+            </button>
           ) : (
-            reports.map((report, idx) => (
-              <div key={idx} className={`border rounded-lg overflow-hidden shadow-sm mb-2 transition-all ${activeReportIdx === idx ? 'border-blue-400 ring-1 ring-blue-400' : 'border-gray-100'}`}>
-                <div 
-                  onClick={() => { 
-                    setActiveReportIdx(idx); 
-                    // ⭐ 중요: 다른 프로젝트 보고서를 선택했을 때, 이전의 분석 상세창이 남아있지 않도록 리셋합니다.
-                    setSelectedAnalysisData(null); 
-                  }}
-                  className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${activeReportIdx === idx ? 'bg-blue-50/50' : 'bg-white hover:bg-gray-50'}`}
-                >
-                  <div className="flex items-center space-x-3 gap-3">
-                    <div className={`w-6 h-6 rounded-full ${activeReportIdx === idx ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-                    <span className={`font-medium text-base ${activeReportIdx === idx ? 'text-blue-700 font-bold' : ''} truncate max-w-[120px]`}>{report}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-gray-500 text-sm">{openReports[idx] ? '▲' : '▼'}</span>
-                    <button onClick={(e) => handleDeleteReport(idx, e)} className="text-gray-400 hover:text-red-500 bg-none border-none text-lg cursor-pointer">🗑️</button>
-                  </div>
-                </div>
+            <span className="font-extrabold text-base tracking-tight text-blue-600">🏛️ 데이터 매핑 시스템</span>
+          )}
 
-                {openReports[idx] && (
-                  <div className="bg-white border-t border-gray-100 divide-y divide-gray-50">
-                    {menuItems.map((item, mIdx) => (
-                      <div 
-                        key={mIdx} 
-                        onClick={() => {
-                          setActiveReportIdx(idx);
-                          setReportMenus(prev => ({ ...prev, [idx]: item }));
-                          // 다른 메뉴로 조작을 변경할 때 분석 상세 보기 인덱스는 강제 오프(Off) 처리합니다.
-                          if (item !== '자료분석') setSelectedAnalysisData(null);
-                        }}
-                        className={`p-3 pl-12 text-sm cursor-pointer transition-colors ${activeReportIdx === idx && currentMenu === item ? 'bg-blue-100/70 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}
-                      >
-                        {item}
-                      </div>
-                    ))}
+          {/* 보고서 전환 드롭다운 모바일 팝업 */}
+          {isReportSelectorOpen && (
+            <div className="absolute left-0 mt-2 w-60 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-2 divide-y divide-gray-100 animate-fade">
+              <div className="max-h-48 overflow-y-auto pb-1.5">
+                {reports.map((report, idx) => (
+                  <div 
+                    key={idx}
+                    onClick={() => { setActiveReportIdx(idx); setSelectedAnalysisData(null); setIsReportSelectorOpen(false); }}
+                    className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${activeReportIdx === idx ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50 text-gray-700'}`}
+                  >
+                    <span className="truncate max-w-[140px]">{report}</span>
+                    <button onClick={(e) => handleDeleteReport(idx, e)} className="text-gray-300 hover:text-red-500 bg-none border-none cursor-pointer">🗑️</button>
                   </div>
-                )}
+                ))}
               </div>
-            ))
+              <div className="pt-1.5">
+                <button onClick={handleCreateReport} className="w-full bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded-xl border-none cursor-pointer shadow-sm text-center">+ 새 보고서 추가</button>
+              </div>
+            </div>
           )}
         </div>
-      </aside>
 
-      {/* ================= MAIN CONTENT ================= */}
-      <main ref={mainContentRef} className="flex-1 flex flex-col p-8 overflow-y-auto box-border items-center justify-center relative">
+        {/* 모바일 대시보드 내 캡처 단추 레이아웃 제어 */}
+        {activeReportIdx !== null && mobileMenu === '자료분석' && selectedAnalysisData && (
+          <button onClick={handleScreenCapture} className="bg-gray-900 text-white font-bold text-xs px-3 py-2 rounded-xl border-none cursor-pointer shadow-sm">📸 캡처</button>
+        )}
+      </header>
+
+      {/* ================= 📦 메인 콘텐트 뷰포트 (스크롤 존) ================= */}
+      <main className="flex-1 w-full overflow-y-auto p-4 pb-20 box-border flex flex-col items-center justify-start select-text">
         
+        {/* [CASE 1] 보고서가 전무할 때의 초기 웰컴 모바일 카드 스크린 */}
         {activeReportIdx === null ? (
-          <div className="w-full max-w-xl text-center bg-white border border-gray-200 rounded-3xl p-12 shadow-md">
-            <div className="text-6xl mb-6">🚀</div>
-            <h1 className="text-3xl font-black text-gray-900 mb-3">공공데이터 매핑 시스템</h1>
-            <p className="text-base text-gray-500 leading-relaxed mb-8">연구 보고서를 새로 등록하여 분석 프로세스를 실시간으로 구성해 보세요.</p>
-            <button onClick={handleCreateReport} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-base px-8 py-4 rounded-2xl border-none cursor-pointer shadow transition-all">✨ 첫 보고서 생성하고 시작하기</button>
+          <div className="w-full my-auto max-w-sm text-center bg-white border border-gray-200 rounded-3xl p-8 shadow-sm">
+            <div className="text-5xl mb-4">🚀</div>
+            <h1 className="text-2xl font-black text-gray-900 mb-2">공공데이터 매핑</h1>
+            <p className="text-xs text-gray-500 leading-relaxed mb-6">
+              공모전 기획서 작성 및 데이터 가설 검정을 위한<br />모바일 맞춤형 분석 주머니입니다.
+            </p>
+            <button onClick={handleCreateReport} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3.5 rounded-xl border-none cursor-pointer shadow">
+              ✨ 첫 프로젝트 등록하기
+            </button>
           </div>
         ) : (
           
-          <div className="w-full max-w-4xl h-full flex flex-col items-center justify-start">
-            <div className="w-full border-b border-gray-200 pb-2 mb-4 text-sm text-gray-400 font-medium text-left flex justify-between items-center">
-              <span>{reports[activeReportIdx]} &gt; {currentMenu} {selectedAnalysisData && ` > ${selectedAnalysisData.title} [${currentSubTab}]`}</span>
-              {currentMenu === '자료분석' && selectedAnalysisData && (
-                <button onClick={handleScreenCapture} className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-bold px-3 py-1.5 rounded-lg text-xs cursor-pointer flex items-center gap-1.5 shadow-sm">📸 현재 대시보드 캡처</button>
-              )}
-            </div>
-
-            {/* 1. 자료검색 섹션 */}
-            {currentMenu === '자료검색' && (
-              <div className={`w-full max-w-3xl flex flex-col items-center transition-all duration-500 ease-in-out ${isSearched ? 'mt-6' : 'mt-[15vh]'}`}>
-                <h1 className={`font-extrabold tracking-wide text-center transition-all duration-500 ${isSearched ? 'text-2xl mb-4' : 'text-4xl mb-8'}`}>🔎 {reports[activeReportIdx]} 공공데이터 검색</h1>
+          <div className="w-full max-w-md h-full flex flex-col justify-start">
+            
+            {/* ── 1. 자료검색 세션 ── */}
+            {mobileMenu === '자료검색' && (
+              <div className="w-full flex flex-col items-center animate-fade">
                 <form onSubmit={handleSearch} className="w-full relative mb-4">
-                  <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={`[${reports[activeReportIdx]}]의 연구 주제를 입력하고 엔터를 누르세요.`} className="w-full px-6 py-4 border-2 border-gray-300 rounded-full text-lg shadow-md focus:outline-none focus:border-blue-600" />
-                  <button type="submit" className="absolute right-5 top-1/2 transform -translate-y-1/2 bg-none border-none text-gray-500 hover:text-gray-800 text-lg cursor-pointer">🔍</button>
+                  <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="연구 주제를 입력하세요 (예: 교통)" className="w-full px-5 py-3.5 border border-gray-300 rounded-full text-sm shadow-sm focus:outline-none focus:border-blue-600 box-border" />
+                  <button type="submit" className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-none border-none text-base cursor-pointer">🔍</button>
                 </form>
 
-                <div className={`w-full space-y-6 mt-4 transition-all duration-500 ${isSearched ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
-                  {dummyCards.map((card) => (
-                    <div key={card.id} className="bg-gray-100 rounded-2xl p-6 shadow-md relative border border-gray-200 text-left">
-                      <button onClick={() => handleDeleteCard(card.id)} className="absolute top-4 right-4 bg-none border-none text-gray-400 hover:text-red-500 text-xl cursor-pointer">🗑️</button>
-                      <h3 className="text-xl font-bold text-center mb-1">{card.title}</h3>
-                      <p className="text-xs text-gray-500 text-center mb-4 font-semibold">{card.subtitle}</p>
-                      <div className="mb-6">
-                        <span className="font-bold text-base block mb-1">요약</span>
-                        <p className="text-sm text-gray-600 leading-relaxed m-0">{card.content}</p>
+                {/* 데이터 검색 결과 카드 피드 */}
+                <div className="w-full space-y-4">
+                  {isSearched ? (
+                    dummyCards.map((card) => (
+                      <div key={card.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 text-left relative">
+                        <span className="text-[10px] text-blue-600 font-bold tracking-wide block mb-1 uppercase">{card.subtitle}</span>
+                        <h3 className="text-base font-bold text-gray-950 mb-2">{card.title}</h3>
+                        <p className="text-xs text-gray-600 leading-relaxed m-0 mb-4">{card.content}</p>
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-50">
+                          <span className="text-xs text-gray-400 font-medium">적합도 ★★★☆☆</span>
+                          <button onClick={() => handleSaveData(card)} className="bg-gray-900 text-white font-bold text-xs px-4 py-2 rounded-xl border-none cursor-pointer shadow-sm">담기</button>
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-semibold text-gray-600">주제 적합도: ★★★☆☆ 3/5</span>
-                        <button onClick={() => handleSaveData(card)} className="bg-gray-900 text-white font-semibold text-sm px-5 py-2 rounded-xl hover:bg-gray-800 shadow-sm border-none cursor-pointer">담기</button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-center py-16 text-gray-400 text-xs">상단에 키워드를 입력하고 검색을 진행하세요.</div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* 2. 자료분석 섹션 */}
-            {currentMenu === '자료분석' && (
-              <div className="w-full font-sans text-left select-text">
+            {/* ── 2. 자료분석 세션 ── */}
+            {mobileMenu === '자료분석' && (
+              <div className="w-full animate-fade">
                 
-                {/* ⭐ 완벽 정렬: 사용자가 보관함 목록에서 데이터를 골라 분석하기 전까진 무조건 이 빈 목록 카드 화면만 고정 노출됩니다! */}
+                {/* [CASE 2-A] 수집 데이터 보관함 리스트 */}
                 {!selectedAnalysisData ? (
-                  <div className="w-full mt-4">
-                    <div className="mb-8 border-b pb-4">
-                      <h1 className="text-3xl font-extrabold text-gray-900">📊 자료 종합 분석 허브</h1>
-                      <p className="text-sm text-gray-500 mt-1">정성 정보(법·목적 등)는 상시 개방되며, 정량 통계 스페이스는 파일 연동 시 작동합니다.</p>
-                    </div>
-
+                  <div className="w-full space-y-4">
                     {currentReportSavedData.length === 0 ? (
-                      <div className="border-2 border-dashed border-gray-300 rounded-3xl py-24 text-center text-gray-400 bg-white shadow-sm max-w-3xl mx-auto">
-                        <div className="text-5xl mb-4">📥</div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-1">수집된 데이터셋이 없습니다</h3>
-                        <p className="text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
-                          현재 [<strong>{reports[activeReportIdx]}</strong>] 프로젝트의 보관함이 비어있습니다.<br />
-                          상단 혹은 왼쪽 서브 메뉴의 <strong>'자료검색'</strong> 탭에서 필요한 공공데이터를 먼저 검색하고 <strong>[담기]</strong> 버튼을 눌러 가져와 주세요!
-                        </p>
+                      <div className="border border-dashed border-gray-300 rounded-2xl py-12 text-center text-gray-400 bg-white text-xs px-6">
+                        <p className="font-medium m-0">분석 보관함이 비어있습니다.</p>
+                        <p className="text-[11px] mt-1 m-0">자료검색 메뉴에서 기획서에 담을 공공데이터를 빌드업해 주세요.</p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {currentReportSavedData.map((data) => (
-                          <div key={data.id} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col justify-between relative">
-                            <div>
-                              <div className="flex justify-between items-center mb-2 pr-6">
-                                <span className="text-xs text-blue-600 font-bold uppercase">{data.subtitle}</span>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${data.isUploaded ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-                                  {data.isUploaded ? '● 통계파일 연동완료' : '○ 통계파일 미부착'}
-                                </span>
-                              </div>
-                              <button onClick={(e) => handleRemoveSavedData(data.id, e)} className="absolute top-5 right-5 bg-none border-none text-gray-300 hover:text-red-500 text-lg cursor-pointer">🗑️</button>
-                              <h3 className="text-xl font-bold text-gray-950 mb-3 pr-6">{data.title}</h3>
-                              
-                              <div className="border border-dashed border-gray-200 rounded-xl p-4 bg-gray-50 mb-6 text-center">
-                                {data.isUploaded ? (
-                                  <div className="text-xs text-gray-600 font-medium">연동 데이터: <span className="font-mono text-blue-600 font-bold">{data.fileName}</span> ({data.size})</div>
-                                ) : (
-                                  <div>
-                                    <p className="text-[11px] text-gray-500 m-0 mb-2">통계 검정용 로컬 파일(.csv)을 붙여 분석 기능을 확장해 보세요.</p>
-                                    <button onClick={() => handleSimulateUpload(data.id)} className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 text-xs py-1 px-2.5 rounded font-medium cursor-pointer shadow-sm">파일 업로드</button>
-                                  </div>
-                                )}
-                              </div>
+                      currentReportSavedData.map((data) => (
+                        <div key={data.id} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm flex flex-col justify-between relative">
+                          <button onClick={(e) => handleRemoveSavedData(data.id, e)} className="absolute top-4 right-4 bg-none border-none text-gray-300 hover:text-red-500 text-base cursor-pointer">🗑️</button>
+                          <div>
+                            <span className="text-[10px] text-gray-400 font-medium block mb-1">{data.subtitle}</span>
+                            <h3 className="text-base font-bold text-gray-950 mb-4 pr-6 leading-tight">{data.title}</h3>
+                            
+                            {/* 모바일 콤팩트 파일 업로드 모듈 */}
+                            <div className="rounded-xl p-3 bg-gray-50 mb-4 text-center border border-dashed border-gray-200">
+                              {data.isUploaded ? (
+                                <span className="text-xs font-mono text-blue-600 font-bold">📎 {data.fileName} (연동됨)</span>
+                              ) : (
+                                <button onClick={() => handleSimulateUpload(data.id)} className="bg-white border border-gray-300 text-gray-700 text-[11px] py-1 px-2.5 rounded font-bold shadow-sm">💻 CSV 파일 업로드</button>
+                              )}
                             </div>
-                            <button onClick={() => { setSelectedAnalysisData(data); setCurrentSubTab('종합'); }} className="w-full font-bold py-3 px-4 rounded-xl text-center text-sm border-none cursor-pointer bg-gray-900 text-white hover:bg-gray-800">대시보드 분석 스페이스 진입 ➡️</button>
                           </div>
-                        ))}
-                      </div>
+                          <button onClick={() => { setSelectedAnalysisData(data); setCurrentSubTab('종합'); }} className="w-full font-bold py-2.5 px-4 rounded-xl text-center text-xs border-none cursor-pointer bg-gray-950 text-white shadow-sm">대시보드 분석 스페이스 진입 ➡️</button>
+                        </div>
+                      ))
                     )}
                   </div>
                 ) : (
                   
-                  /* [CASE 2-B] 8대 마스터 탭 상세 모듈 화면 */
-                  <div className="w-full mt-2">
-                    <div className="flex items-center justify-between mb-4">
-                      <button onClick={() => setSelectedAnalysisData(null)} className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-semibold px-4 py-2 rounded-lg text-xs cursor-pointer shadow-sm">⬅️ 자료함 목록으로</button>
-                    </div>
+                  /* [CASE 2-B] 8대 마스터 탭 상세 모바일 오버레이 화면 */
+                  <div className="w-full flex flex-col">
+                    <button onClick={() => setSelectedAnalysisData(null)} className="w-max bg-white text-gray-700 border border-gray-300 font-bold px-3 py-1.5 rounded-xl text-xs cursor-pointer shadow-sm mb-4">⬅️ 자료함 목록</button>
+                    <h2 className="text-lg font-black text-gray-900 mb-4 leading-tight">{selectedAnalysisData.title}</h2>
 
-                    <h2 className="text-2xl font-black text-gray-900 mb-6">📊 {selectedAnalysisData.title}</h2>
-
-                    <div className="grid grid-cols-4 md:grid-cols-8 gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm mb-6 text-center">
+                    {/* ⭐ 모바일 특화: 8대 분석 메뉴 탭 가로 스크롤 레이아웃 터치 활성화 */}
+                    <div className="flex overflow-x-auto whitespace-nowrap bg-white border border-gray-200 rounded-xl p-1 gap-1 mb-4 no-scrollbar">
                       {subTabs.map((tab) => (
-                        <button key={tab} onClick={() => setCurrentSubTab(tab)} className={`text-center py-2.5 text-xs font-bold rounded-lg cursor-pointer transition-all border-none ${currentSubTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>{tab}</button>
+                        <button key={tab} onClick={() => setCurrentSubTab(tab)} className={`inline-block px-4 py-2 text-xs font-bold rounded-lg cursor-pointer transition-all border-none ${currentSubTab === tab ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:bg-gray-50'}`}>{tab}</button>
                       ))}
                     </div>
 
-                    <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm min-h-[200px]">
+                    {/* 정성/정량 분석 세부 내용 본문 창 */}
+                    <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm min-h-[160px] text-left">
                       {currentSubTab === '종합' && (
-                        <div className="space-y-4">
-                          <h3 className="text-base font-bold text-gray-900 m-0">📜 데이터셋 메타 개요 요약</h3>
-                          <p className="text-sm text-gray-600 leading-relaxed m-0 bg-gray-50 p-4 rounded-xl">본 데이터셋은 {selectedAnalysisData.subtitle}에서 발급 및 개방한 행정 표준 자료입니다. 소관 법률 지표와 연계하여 정책적 타당성 검토 연구에 사용하기 매우 유리한 구조를 띄고 있으며, 아래 각 탭에서 상세 메타데이터 추이를 선제적으로 조회할 수 있습니다.</p>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-gray-400 m-0">개요 스냅샷</h4><button onClick={() => handleQuickAsk("데이터셋 개요 기술통계")} className="text-[10px] bg-gray-100 border-none font-bold rounded px-1.5 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <p className="text-xs text-gray-700 leading-relaxed m-0 font-medium">본 자료는 {selectedAnalysisData.subtitle} 소관의 공공 정보 지표입니다. 정책 제안서의 핵심 논거 단락으로 치환해 구성하기 탁월합니다.</p>
                         </div>
                       )}
                       {currentSubTab === '통계' && (
                         <div className="space-y-2">
-                          <h3 className="text-base font-bold text-gray-900 mb-2">🤖 AI 가설 검정 및 정량 분석 로그</h3>
+                          <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-gray-400 m-0">AI 계량 통계 모델</h4>{selectedAnalysisData.isUploaded && <button onClick={() => handleQuickAsk("R 계량 통계 분석 로그")} className="text-[10px] bg-gray-100 border-none font-bold rounded px-1.5 py-0.5 text-blue-600 cursor-pointer">💬 질문</button>}</div>
                           {selectedAnalysisData.isUploaded ? (
-                            <pre className="text-xs text-green-400 bg-gray-950 p-4 rounded-xl font-mono leading-relaxed overflow-x-auto">{`> summary(lm(Formula = Main_Target ~ Var_A + Var_B, data = user_dataset))\n\nCoefficients:\n            Estimate Std. Error t value Pr(>|t|)    \n(Intercept)  1.74512    0.02415   72.25   <2e-16 ***\nVar_A_Value  0.81245    0.01512   53.73   <2e-16 ***`}</pre>
+                            <pre className="text-[10px] text-green-400 bg-gray-950 p-3 rounded-xl font-mono overflow-x-auto leading-tight">{`> lm(Target ~ Var_A)\nCoefficients:\nEstimate  Std.Error  t-value\n1.74512   0.02415    72.25\nPr(>|t|)  < 2e-16 ***`}</pre>
                           ) : (
-                            <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                              <span className="text-3xl block mb-2">🔒</span>
-                              <p className="text-sm font-bold text-gray-600 m-0">통계 분석 엔진이 비활성화되어 있습니다.</p>
-                              <p className="text-xs text-gray-400 mt-1 mb-4">바깥 목록에서 CSV 데이터셋 파일을 업로드하셔야 합니다.</p>
-                              <button onClick={() => handleSimulateUpload(selectedAnalysisData.id)} className="bg-gray-900 hover:bg-gray-800 text-white font-bold text-xs py-2 px-4 rounded-lg cursor-pointer border-none shadow-sm">즉시 파일 업로드 연동하기</button>
-                            </div>
+                            <p className="text-xs text-gray-400 text-center py-4">🔒 통계 파일 미부착 상태입니다.</p>
                           )}
                         </div>
                       )}
                       {currentSubTab === '법' && (
                         <div className="space-y-2">
-                          <h3 className="text-base font-bold text-gray-900 m-0">⚖️ 소관 및 규제 근거 법령 단락</h3>
-                          <p className="p-4 bg-blue-50 text-sm text-blue-900 rounded-xl leading-relaxed m-0 font-medium">{selectedAnalysisData.law}</p>
+                          <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-gray-400 m-0">⚖️ 소관 근거 법령 법률</h4><button onClick={() => handleQuickAsk(selectedAnalysisData.law)} className="text-[10px] bg-gray-100 border-none font-bold rounded px-1.5 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <p className="p-3 bg-blue-50 text-xs text-blue-900 rounded-xl leading-relaxed m-0 font-semibold">{selectedAnalysisData.law}</p>
                         </div>
                       )}
                       {currentSubTab === '기능' && (
                         <div className="space-y-2">
-                          <h3 className="text-base font-bold text-gray-900 m-0">⚙️ 데이터 활용 행정적 기능</h3>
-                          <p className="p-4 bg-gray-50 border border-gray-100 text-sm text-gray-700 rounded-xl leading-relaxed m-0">{selectedAnalysisData.function}</p>
+                          <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-gray-400 m-0">⚙️ 행정적 수행 기능</h4><button onClick={() => handleQuickAsk(selectedAnalysisData.function)} className="text-[10px] bg-gray-100 border-none font-bold rounded px-1.5 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <p className="p-3 bg-gray-50 text-xs text-gray-700 rounded-xl leading-relaxed m-0">{selectedAnalysisData.function}</p>
                         </div>
                       )}
                       {currentSubTab === '목적' && (
                         <div className="space-y-2">
-                          <h3 className="text-base font-bold text-gray-900 m-0">🎯 공공 개방 및 아카이빙 목적</h3>
-                          <p className="p-4 bg-gray-50 border border-gray-100 text-sm text-gray-700 rounded-xl leading-relaxed m-0">{selectedAnalysisData.purpose}</p>
+                          <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-gray-400 m-0">🎯 공공 개방 목적성</h4><button onClick={() => handleQuickAsk(selectedAnalysisData.purpose)} className="text-[10px] bg-gray-100 border-none font-bold rounded px-1.5 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <p className="p-3 bg-gray-50 text-xs text-gray-700 rounded-xl leading-relaxed m-0">{selectedAnalysisData.purpose}</p>
                         </div>
                       )}
                       {currentSubTab === '조직' && (
                         <div className="space-y-2">
-                          <h3 className="text-base font-bold text-gray-900 m-0">🏢 데이터 거버넌스 소관 부처 및 직제</h3>
-                          <p className="p-4 bg-gray-50 border border-gray-100 text-sm text-gray-700 rounded-xl leading-relaxed m-0">{selectedAnalysisData.org}</p>
+                          <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-gray-400 m-0">🏢 담당 부처 조직도 직제</h4><button onClick={() => handleQuickAsk(selectedAnalysisData.org)} className="text-[10px] bg-gray-100 border-none font-bold rounded px-1.5 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <p className="p-3 bg-gray-50 text-xs text-gray-700 rounded-xl leading-relaxed m-0 font-bold">{selectedAnalysisData.org}</p>
                         </div>
                       )}
                       {currentSubTab === '사업' && (
                         <div className="space-y-2">
-                          <h3 className="text-base font-bold text-gray-900 m-0">💸 국책 추진 및 예산 연계 사업</h3>
-                          <p className="p-4 bg-slate-900 text-sm text-slate-100 rounded-xl leading-relaxed m-0 font-medium">{selectedAnalysisData.business}</p>
+                          <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-gray-400 m-0">💸 국책 예산 집행 사업</h4><button onClick={() => handleQuickAsk(selectedAnalysisData.business)} className="text-[10px] bg-gray-100 border-none font-bold rounded px-1.5 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <p className="p-3 bg-slate-900 text-xs text-slate-100 rounded-xl leading-relaxed m-0 font-medium">{selectedAnalysisData.business}</p>
                         </div>
                       )}
                       {currentSubTab === '도움말' && (
-                        <p className="text-sm text-gray-600 m-0 leading-relaxed">• 이용 안내 가이드: 대시보드 화면상에 노출된 어떤 문장이든 마우스 드래그 블록을 지정하면, 즉시 우측 챗봇 상담 탭으로 전송하여 연계 질의를 나눌 수 있습니다.</p>
+                        <p className="text-[11px] text-gray-500 m-0 leading-relaxed">• 모바일 조작 가이드: 텍스트 드래그가 미끄러질 수 있으므로, 우측 상단 문장 분류별로 기본 탑재된 [💬 질문] 아이콘 단추를 원터치로 탭하시면 즉시 스마트 인공지능 연계 상담 피드로 질문 바인딩 전송 처리가 수행됩니다.</p>
                       )}
                     </div>
                   </div>
@@ -444,56 +357,71 @@ export default function App() {
               </div>
             )}
 
-            {/* 3. 챗봇 섹션 */}
-            {currentMenu === '챗봇' && (
-              <div className="w-full max-w-3xl text-left flex flex-col h-[78vh] bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="bg-gray-950 text-white px-6 py-4 flex justify-between items-center select-none">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🤖</span>
-                    <div>
-                      <span className="font-bold text-sm block">연구 매핑 AI 어시스턴트</span>
-                      <span className="text-[10px] text-green-400 font-medium">● 실시간 공모전 도우미 작동 중</span>
-                    </div>
-                  </div>
-                  <span className="text-xs text-gray-400 font-mono">{reports[activeReportIdx]} 전용 챗룸</span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+            {/* ── 3. 챗봇 세션 (모바일 메신저 레이아웃 카피) ── */}
+            {mobileMenu === '챗봇' && (
+              <div className="w-full flex flex-col h-[70vh] bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden animate-fade">
+                {/* 챗 메시지 영역 */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
                   {currentChatHistory.map((msg, mIdx) => (
                     <div key={mIdx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] rounded-2xl p-4 shadow-sm text-sm ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 border border-gray-200 rounded-tl-none'}`}>
+                      <div className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 border border-gray-200 rounded-tl-none'}`}>
                         {msg.capture && (
-                          <div className="mb-2 p-2.5 bg-black/10 rounded-xl border border-white/10 text-xs flex flex-col gap-1">
-                            <span className="font-bold block">📸 연동 첨부된 화면 캡처 스냅샷</span>
-                            <span>데이터셋: {msg.capture.dataTitle}</span>
-                            <span>선택 탭: {msg.capture.sourceTab} 스페이스 영역</span>
+                          <div className="mb-1.5 p-2 bg-black/10 rounded-lg text-[10px] flex flex-col gap-0.5">
+                            <span className="font-bold">📸 동봉 캡처 스냅샷 정보</span>
+                            <span>자료명: {msg.capture.dataTitle} ({msg.capture.sourceTab})</span>
                           </div>
                         )}
-                        <p className="m-0 leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                        <p className="m-0 whitespace-pre-wrap">{msg.text}</p>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <form onSubmit={handleSendMessage} className="border-t border-gray-200 p-4 bg-white space-y-3">
+                {/* 하단 전송창 영역 */}
+                <form onSubmit={handleSendMessage} className="border-t border-gray-200 p-3 bg-white space-y-2">
                   {attachedCapture && (
-                    <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs">
-                      <div className="text-amber-800 font-medium">📎 [전송 대기] <strong>{attachedCapture.dataTitle} ({attachedCapture.sourceTab})</strong> 스크린샷이 첨부되었습니다.</div>
-                      <button type="button" onClick={() => setAttachedCapture(null)} className="text-amber-500 hover:text-amber-700 bg-none border-none cursor-pointer font-bold">X</button>
+                    <div className="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-lg px-2 py-1 text-[10px] text-amber-800">
+                      <span>📎 캡처본 첨부 대기중 ({attachedCapture.sourceTab})</span>
+                      <button type="button" onClick={() => setAttachedCapture(null)} className="border-none bg-none text-amber-500 font-bold cursor-pointer">X</button>
                     </div>
                   )}
-
-                  <div className="flex gap-2">
-                    <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder={attachedCapture ? "캡처 화면에 대해 물어볼 내용을 입력하세요..." : "소관 법령이나 통계 검정 결과에 대해 질문해보세요..."} className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 shadow-inner" />
-                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-3 rounded-xl border-none cursor-pointer">전송</button>
+                  <div className="flex gap-1.5">
+                    <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="분석 결과나 스토리라인을 질문하세요..." className="flex-1 px-3 py-2.5 border border-gray-300 rounded-xl text-xs focus:outline-none focus:border-blue-500 shadow-inner" />
+                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 rounded-xl border-none cursor-pointer">전송</button>
                   </div>
                 </form>
               </div>
             )}
+            
           </div>
         )}
-
       </main>
+
+      {/* ================= 📱 하단 모바일 앱 고정 네비게이션 바 ================= */}
+      {activeReportIdx !== null && (
+        <nav className="w-full bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 h-16 flex z-40 select-none shadow-lg">
+          {menuItems.map((item) => {
+            let icon = '🔎';
+            if (item === '자료분석') icon = '📊';
+            if (item === '챗봇') icon = '🤖';
+
+            return (
+              <button
+                key={item}
+                onClick={() => {
+                  setMobileMenu(item);
+                  if (item !== '자료분석') setSelectedAnalysisData(null);
+                }}
+                className={`flex-1 flex flex-col items-center justify-center border-none bg-transparent cursor-pointer transition-colors ${mobileMenu === item ? 'text-blue-600 font-bold' : 'text-gray-400'}`}
+              >
+                <span className="text-xl mb-0.5">{icon}</span>
+                <span className="text-[10px] tracking-tight">{item}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
     </div>
   );
 }
