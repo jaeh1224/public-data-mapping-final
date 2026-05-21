@@ -31,7 +31,7 @@ export default function App() {
   const [dragPopup, setDragPopup] = useState({ visible: false, x: 0, y: 0, text: '' });
   const [isReportSelectorOpen, setIsReportSelectorOpen] = useState(false);
 
-  // 💻 데스크톱용 마우스 드래그 감지
+  // 💻 데스크톱 마우스 드래그 감지
   const handleTextSelection = () => {
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
@@ -62,7 +62,7 @@ export default function App() {
 
   const handleAskDragText = () => {
     if (activeReportIdx === null) return;
-    setChatInput(`"${dragPopup.text}" 단락을 바탕으로 연구 제안서에 쓸 행정적 근거 논거를 추천해줘.`);
+    setChatInput(`"${dragPopup.text}" -> 이 내용에 대해 사회과학적 관점으로 보완 설명해줘.`);
     setCurrentMenu('챗봇');
     setDragPopup(prev => ({ ...prev, visible: false }));
   };
@@ -74,34 +74,33 @@ export default function App() {
       dataTitle: selectedAnalysisData.title,
       timestamp: '방금 전 캡처됨'
     });
-    alert(`현재 [${currentSubTab}] 대시보드 화면이 캡처되어 챗봇창에 연동되었습니다!`);
+    alert(`현재 [${currentSubTab}] 대시보드가 캡처되어 챗봇창에 대기 상태로 연동되었습니다!`);
   };
 
-  // 🤖 고도화된 챗봇 응답 알고리즘 프로세서
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
     if (!chatInput.trim() && !attachedCapture) return;
 
     const currentHistory = chatHistoryByReport[activeReportIdx] || [
-      { sender: 'ai', text: '안녕하세요! 현재 수집한 공공데이터의 위계 규격과 소관 부처 목적성을 기반으로 사회과학적 연구 제안서 스토리라인을 빌드업해 드릴게요.' }
+      { sender: 'ai', text: '안녕하세요! 현재 수집한 공공데이터의 위계 규격과 소관 부처 목적성을 기반으로 스토리라인을 다듬어 드릴게요.' }
     ];
 
     const userMessage = { sender: 'user', text: chatInput, capture: attachedCapture ? { ...attachedCapture } : null };
 
-    // 💡 기획 스펙이 투영된 인공지능 알고리즘 분기 설계
-    let aiResponseText = "제시해주신 연구 가설을 발전시키기 위해, 데이터 수집 대상 지자체의 조례 규격과 실·국 단위의 공공 개방 목적성을 인과관계 모델의 통제 변수로 결합하는 스토리라인을 추천합니다.";
+    // 🤖 고도화된 챗봇 응답 알고리즘 프로세서 (기획안 반영)
+    let aiResponseText = "제시해주신 데이터 구조를 분석해 볼 때, 공모전 제안서의 '기대효과' 파트에 소관 법령 지표를 결합하여 서술하는 방식이 심사위원단에 가장 설득력 있게 다가갈 것입니다.";
     
     const targetTab = attachedCapture ? attachedCapture.sourceTab : currentSubTab;
     const dataName = selectedAnalysisData ? selectedAnalysisData.title : '선택된 데이터';
 
     if (chatInput.includes("법") || targetTab === "법") {
-      aiResponseText = `⚖️ [AI 법률 위계 분석]: [${dataName}] 분석 결과, 상위 '헌법 및 법령' 지표와 하위 '지자체 자치법규(조례·규칙)' 간의 정합성을 논거로 삼아야 합니다. 특히 '특별법 우선 원칙'을 기획서 서론에 명시하고, 기초/광역 조례 위계 구조에 따른 행정 집행 효율성을 연구의 기대효과로 제시하면 설득력이 대폭 강화됩니다.`;
+      aiResponseText = `⚖️ [AI 법률 위계 분석]: [${dataName}] 분석 결과, 상위 '헌법 및 법령' 지표와 하위 '지자체 자치법규(조례·규칙)' 간의 정합성을 논거로 삼아야 합니다. 특별법 우선 원칙에 따라, 조례 위계 구조에 기반한 행정 효율성을 제안서의 기대효과로 제시하면 설득력이 대폭 강화됩니다.`;
     } else if (chatInput.includes("조직") || targetTab === "조직") {
-      aiResponseText = `🏢 [AI 조직 거버넌스 분석]: 본 행정 데이터는 경기도 데이터드림 메타 규격에 따라 '국가 조직'은 제외하고 본청(경제부지사 소관 ➡️ 도시교통실 ➡️ 버스정책과) 및 외청 사업소 위계로 매핑됩니다. 제안서 작성 시, 중앙 부처가 아닌 '지자체 실·국 및 과 단위 직제'의 실무 기능과 산하 공공기관(경기교통공사 등)의 에이전시 역할을 명확히 구분하여 거버넌스 협력 체계도를 그리시는 것을 강력 추천합니다.`;
+      aiResponseText = `🏢 [AI 조직 거버넌스 분석]: 본 데이터는 경기도 데이터드림 메타 규격에 따라 '국가 조직'은 제외하고 본청(경제부지사 소관 ➡️ 도시교통실 ➡️ 버스정책과) 및 외청 위계로 매핑됩니다. 제안서 스토리라인 작성 시, '지자체 실·국 단위 직제'의 실무 기능과 산하 공공기관(경기교통공사 등)의 에이전시 역할을 명확히 구분하여 거버넌스 체계도를 그리시는 것을 강력 추천합니다.`;
     } else if (chatInput.includes("목적") || chatInput.includes("기능") || targetTab === "목적") {
-      aiResponseText = `🎯 [AI 기능·목적 통합 분석]: '정책 분야/영역/대기능'으로 이어지는 기능 분류 체계와 실·국·과 및 공공기관의 '수행 목적성'을 유기적으로 바인딩했습니다. 버스정책과(과 단위)의 수요 예측 효율화 목적과 경기교통공사(공공기관)의 민간 거버넌스 개방 목적이 결합하는 지점을 공모전 제안서의 핵심 '가설 1'로 설정하여 스토리라인을 전개해 보세요.`;
+      aiResponseText = `🎯 [AI 기능·목적 통합 분석]: '정책 분야/영역/대기능'으로 이어지는 기능 분류 체계와 실·국·과 단위의 '수행 목적성'을 유기적으로 결합했습니다. 버스정책과(과 단위)의 수요 예측 효율화 목적과 경기교통공사(공공기관)의 민간 거버넌스 개방 목적이 결합하는 지점을 공모전 제안서의 핵심 '가설 1'로 설정하여 스토리라인을 전개해 보세요.`;
     } else if (attachedCapture) {
-      aiResponseText = `📸 [모바일 스냅샷 판독]: 동봉해주신 [${attachedCapture.dataTitle} > ${attachedCapture.sourceTab}] 화면을 기반으로 행정학적 메타 분석을 수행했습니다. 해당 단락의 정성 지표를 정량적 R 통계 검정 결과와 융합하여 제안서 결론부의 정책적 시사점으로 매핑하세요.`;
+      aiResponseText = `📸 [캡처 화면 분석 결과]: 보내주신 [${attachedCapture.dataTitle} > ${attachedCapture.sourceTab}] 스냅샷 인프라를 판독했습니다. 이 구간 수치를 상관관계 가설의 독립변수로 결합하여 제안서 결론부의 정책적 시사점으로 매핑하세요.`;
     }
 
     const aiMessage = { sender: 'ai', text: aiResponseText };
@@ -161,7 +160,7 @@ export default function App() {
     }
   };
 
-  // ⭐ 기획안 문서 구조가 완벽하게 바인딩되는 데이터 생성기
+  // ⭐ 기획 스펙이 완전하게 투영된 데이터 생성기 (법 위계 및 조직 목적 세부 클래스 반영)
   const handleSaveData = (card) => {
     if (activeReportIdx === null) return;
     const currentSaved = savedDataByReport[activeReportIdx] || [];
@@ -172,13 +171,19 @@ export default function App() {
       isUploaded: false, 
       fileName: '', rows: '-', cols: '-', size: '-',
       
-      // 법 위계 및 규칙 구조 투영
-      law: '헌법 ➡️ 법령 ➡️ 명령 [대통령령(시행령) > 총리령/부령(시행규칙)] ➡️ 광역 법규 (조례 > 규칙) ➡️ 기초 법규 (조례/규칙) 위계 구조 준수. (*특별법 > 일반법 규칙 적용)',
+      // 법 위계 구조 스펙 (특별법 > 일반법 원칙 적용)
+      lawHierarchy: [
+        { label: '헌법', text: '헌법 (국민의 권리와 국가의 의무 보장)' },
+        { label: '법률', text: '법률 (ex. 대중교통의 육성 및 이용에 관한 법률)  *특별법 우선 적용' },
+        { label: '명령', text: '명령 [대통령령(시행령) > 총리령/부령(시행규칙)]' },
+        { label: '자치법규', text: '자치법규 [광역(조례 > 규칙) > 기초(조례/규칙)]' },
+      ],
+      lawDetail: '해당 지자체 데이터 개방 및 품질 관리 조례 제14조에 의거, 공공 거버넌스 책무 달성을 위해 수집 및 표준화된 근거를 가짐.',
       
-      // 기능 + 목적 통합 구조 투영
+      // 기능 + 목적 통합 스펙
       purpose: '[기능분류]: 정책 분야 ➡️ 정책 영역 ➡️ 대기능 유기적 연계 / [수행목적]: 실·국 단위(도시교통실), 과 단위(버스정책과), 공공기관(경기교통공사) 목적성 통합 매핑',
       
-      // 국가 조직 제외 지자체/공공기관 구조 투영
+      // 국가 조직 제외 지자체/공공기관 구조 스펙
       org: '[지자체 본청]: 경제부지사 ➡️ 실·국(도시교통실) ➡️ 과(버스정책과) 및 외청 직속기관/사업소 ➡️ [공공기관]: 경기교통공사 매핑 (*데이터드림 메타 규격에 따라 국가 관리 부서 항목이 없으므로 국가 조직은 다루지 않음)'
     };
 
@@ -208,8 +213,9 @@ export default function App() {
     if (selectedAnalysisData && selectedAnalysisData.id === dataId) setSelectedAnalysisData(target);
   };
 
+  // 📱 모바일 터치 전용 퀵 질문 매핑
   const handleQuickAsk = (text) => {
-    setChatInput(`"${text}" 내용을 바탕으로 연구 제안서 스토리라인 고도화 논거를 짜줘.`);
+    setChatInput(`"${text}" -> 이 내용의 공모전 제안서 고도화 스토리라인을 다듬어줘.`);
     setCurrentMenu('챗봇');
   };
 
@@ -219,7 +225,7 @@ export default function App() {
   return (
     <div className="flex h-screen w-full bg-gray-50 text-gray-800 font-sans m-0 p-0 overflow-hidden" onMouseUp={handleTextSelection}>
       
-      {/* PC 전용 드래그 질문 팝업 단추 */}
+      {/* 💻 데스크톱 미니 질문 팝업 단추 */}
       {dragPopup.visible && (
         <button onClick={handleAskDragText} className="drag-popup-btn absolute z-[999] bg-gray-950 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-2xl border-none cursor-pointer hover:bg-blue-600 hidden md:flex items-center gap-1.5 animate-bounce" style={{ left: `${dragPopup.x}px`, top: `${dragPopup.y}px` }}>
           <span>💬</span> 챗봇에서 질문하기
@@ -279,7 +285,7 @@ export default function App() {
       {/* ================= MAIN DISPLAY VIEWPORT ================= */}
       <main className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto box-border items-center justify-center relative pb-20 md:pb-8">
         
-        {/* 📱 모바일 전용 헤더 바 */}
+        {/* 📱 모바일 상단 헤더 바 */}
         {activeReportIdx !== null && (
           <div className="w-full bg-white border border-gray-200 rounded-2xl p-3 flex justify-between items-center md:hidden mb-4 shadow-sm select-none shrink-0 relative z-30">
             <button 
@@ -406,9 +412,9 @@ export default function App() {
                 ) : (
                   
                   /* 6대 마스터 탭 전용 레이아웃 스페이스 */
-                  <div className="w-full mt-1">
+                  <div className="w-full mt-1 overflow-hidden flex flex-col h-full">
                     <button onClick={() => setSelectedAnalysisData(null)} className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-bold px-3 py-1.5 rounded-xl text-xs cursor-pointer shadow-sm mb-4">⬅️ 자료함 목록으로</button>
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 mb-4 md:mb-6 leading-tight">{selectedAnalysisData.title}</h2>
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 mb-4 md:mb-6 leading-tight truncate">{selectedAnalysisData.title}</h2>
 
                     {/* 반응형 6분할 구조 마스터 바 */}
                     <div className="flex md:grid md:grid-cols-6 overflow-x-auto whitespace-nowrap bg-white border border-gray-200 rounded-xl p-1 shadow-sm mb-4 md:mb-6 gap-1 text-center no-scrollbar">
@@ -417,12 +423,13 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* 기획서 기준 최종 정성 텍스트 렌더링 블록 */}
-                    <div className="bg-white border border-gray-200 rounded-2xl p-5 md:p-6 shadow-sm min-h-[200px]">
+                    {/* 기획서 기준 최종 정성 텍스트 렌더링 블록 (법/조직 위계 트리 UI 반영) */}
+                    <div className="flex-1 bg-white border border-gray-200 rounded-2xl p-5 md:p-6 shadow-sm min-h-[200px] overflow-y-auto">
+                      
                       {currentSubTab === '종합' && (
                         <div className="space-y-3">
                           <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">📜 데이터셋 메타 개요 요약</h3><button onClick={() => handleQuickAsk("데이터셋 메타 개요 요약")} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
-                          <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 bg-gray-50 p-4 rounded-xl">本 데이터셋은 산하 소관 부처의 특정 행정 목적 달성을 위해 계량 수집된 지표입니다. 소관 법률 위계 구조 및 부서별 실무 목적 체계와 교차 매핑하여 정책 기획서의 배경 논거로 원용하기에 매우 최적화되어 있습니다.</p>
+                          <p className="text-xs md:text-sm text-gray-600 leading-relaxed m-0 bg-gray-50 p-4 rounded-xl">本 데이터셋은 산하 소관 부처의 특정 행정 목적 달성을 위해 계량 수집된 지표 데이터입니다. 소관 법률 위계 구조 및 부서별 실무 목적 체계와 교차 매핑하여 정책 기획서의 배경 논거로 원용하기에 매우 최적화되어 있습니다.</p>
                         </div>
                       )}
                       {currentSubTab === '통계' && (
@@ -435,44 +442,79 @@ export default function App() {
                           )}
                         </div>
                       )}
+
+                      {/* ⚖️ 법 탭: 기획하신 위계 트리 UI 반영 */}
                       {currentSubTab === '법' && (
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">⚖️ 소관 및 규제 근거 법령 위계 구조</h3><button onClick={() => handleQuickAsk(selectedAnalysisData.law)} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
-                          <div className="p-4 bg-blue-50/70 text-xs md:text-sm text-blue-950 rounded-xl leading-relaxed m-0 space-y-2">
-                            <p className="font-extrabold text-blue-800 border-b border-blue-200 pb-1.5 mb-2">📋 행정 법률 위계 기틀 매핑 단락</p>
-                            <p className="m-0 font-medium">{selectedAnalysisData.law}</p>
-                            <div className="text-[11px] text-blue-600 bg-white/60 p-2.5 rounded-lg mt-2 font-mono leading-normal">
-                              헌법 ➡️ 법령/법률 ➡️ 명령 [대통령령(시행령) &gt; 총리령/부령(시행규칙)] ➡️ 광역 조례/규칙 ➡️ 기초 조례/규칙
+                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">⚖️ 소관 및 규제 근거 법령 위계 구조</h3><button onClick={() => handleQuickAsk(selectedAnalysisData.lawHierarchy.map(h => h.label).join(' > '))} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <p className="text-sm text-gray-500 m-0 leading-relaxed hidden md:block">특별법 우선 원칙에 따라 소관 데이터 개방 규격이 정비됩니다. 하단 위계 트리를 통해 법적 근거의 수직적 계통을 확인하세요.</p>
+                          
+                          {/* 법 위계 트리 시각화 */}
+                          <div className="w-full flex items-center justify-center py-4 select-none">
+                            <div className="flex flex-col items-center gap-1">
+                              {selectedAnalysisData.lawHierarchy.map((item, index) => (
+                                <React.Fragment key={item.label}>
+                                  <div className="flex flex-col items-center w-max p-3 bg-white border-2 border-gray-100 rounded-2xl shadow-sm text-center">
+                                    <span className="text-[10px] text-blue-600 font-bold mb-1 uppercase tracking-tight">{item.label}</span>
+                                    <span className="text-xs md:text-sm text-gray-800 font-medium whitespace-nowrap">{item.text}</span>
+                                  </div>
+                                  {index < selectedAnalysisData.lawHierarchy.length - 1 && (
+                                    <div className="text-lg text-gray-200 font-bold py-1">⬇️</div>
+                                  )}
+                                </React.Fragment>
+                              ))}
                             </div>
+                          </div>
+
+                          <div className="p-4 bg-gray-50 text-xs md:text-sm text-gray-700 rounded-xl leading-relaxed m-0 border border-gray-100">
+                            <p className="font-extrabold text-blue-900 border-b border-gray-200 pb-1.5 mb-2">[조례 제14조 데이터 개방 및 품질 관리]</p>
+                            <p className="m-0 text-xs leading-relaxed">{selectedAnalysisData.lawDetail}</p>
                           </div>
                         </div>
                       )}
+                      
+                      {/* 🎯 목적 탭: 통합된 기능/목적 구조 반영 */}
                       {currentSubTab === '목적' && (
                         <div className="space-y-3">
                           <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">🎯 정책 기능 분류 및 행정 수행 목적성</h3><button onClick={() => handleQuickAsk(selectedAnalysisData.purpose)} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
-                          <div className="p-4 bg-gray-50 text-xs md:text-sm text-gray-700 rounded-xl leading-relaxed m-0 space-y-3">
+                          <div className="p-4 bg-gray-50 text-xs md:text-sm text-gray-700 rounded-xl leading-relaxed m-0 space-y-3 border border-gray-100">
                             <div>
-                              <span className="font-bold text-blue-600 block text-[11px] uppercase mb-0.5">[기능 분류 체계]</span>
-                              <p className="m-0 font-semibold text-gray-900">정책 분야 ➡️ 정책 영역 ➡️ 대기능 연계 고도화</p>
+                              <span className="font-bold text-blue-600 block text-[11px] uppercase mb-1">[기능 분류 체계 (Function)]</span>
+                              <p className="m-0 font-semibold text-gray-900 bg-white p-3 rounded-lg border border-gray-200">정책 분야 ➡️ 정책 영역 ➡️ 대기능 유기적 연계</p>
                             </div>
-                            <div className="border-t pt-2 border-gray-200">
-                              <span className="font-bold text-emerald-600 block text-[11px] uppercase mb-0.5">[거버넌스 수행 목적]</span>
-                              <p className="m-0 text-gray-600">{selectedAnalysisData.purpose}</p>
+                            <div className="border-t pt-2 border-gray-200 space-y-1">
+                              <span className="font-bold text-emerald-600 block text-[11px] uppercase mb-1">[거버넌스 수행 목적 (Purpose)]</span>
+                              <p className="m-0 text-gray-600 text-xs leading-relaxed">{selectedAnalysisData.purpose}</p>
                             </div>
                           </div>
                         </div>
                       )}
+
+                      {/* 🏢 조직 탭: 기획하신 지자체/공공기관 위계 트리 UI 반영 */}
                       {currentSubTab === '조직' && (
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">🏢 데이터 거버넌스 소관 부처 직제 정보</h3><button onClick={() => handleQuickAsk(selectedAnalysisData.org)} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
-                          <div className="p-4 bg-amber-50/40 border border-amber-100 text-xs md:text-sm text-gray-800 rounded-xl leading-relaxed m-0 space-y-2">
-                            <p className="m-0 font-medium">{selectedAnalysisData.org}</p>
-                            <div className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded font-mono">
-                              지자체 본청 위계: 직할기관 / 행정1·2부지사 / 경제부지사 [본청] ➡️ 실·국 ➡️ 과 / 산하 공공기관 에이전시 매핑
-                            </div>
+                        <div className="space-y-3 overflow-x-hidden">
+                          <div className="flex justify-between items-center"><h3 className="text-sm md:text-base font-bold text-gray-900 m-0">🏢 데이터 거버넌스 소관 부처 직제 트리</h3><button onClick={() => handleQuickAsk("경기도청 경제부지사 소관 직제 위계")} className="md:hidden text-[10px] bg-blue-50 border-none font-bold rounded px-2 py-0.5 text-blue-600 cursor-pointer">💬 질문</button></div>
+                          <p className="text-sm text-gray-500 m-0 leading-relaxed hidden md:block select-none">데이터드림 규격에 따라 중앙 부처(국가 조직)는 제외하고 경기도청 경제부지사 소관의 본청 실·국/과 및 외청 사업소 위계만 매핑합니다.</p>
+                          
+                          {/* 조직 위계 트리 시각화: 데스크톱에서는 6열 그리드, 모바일에서는 터치 가로스크롤 */}
+                          <div className="flex overflow-x-auto whitespace-nowrap bg-white border border-gray-200 rounded-2xl p-4 gap-1 select-none no-scrollbar md:grid md:grid-cols-6 md:divide-x md:divide-gray-100 md:gap-0 justify-items-center">
+                            {['경기도청 [본청]', '경제부지사', '도시교통실 [실·국]', '버스정책과 [과]', '외청 [사업소]', '경기교통공사 [공공기관 에이전시]'].map((node, index) => (
+                              <React.Fragment key={index}>
+                                <div className="inline-block md:block flex flex-col items-center justify-center p-3 w-[120px] h-[80px] bg-white border border-gray-100 rounded-xl shadow-sm text-center md:w-full md:h-max md:border-none md:shadow-none md:rounded-none">
+                                  <span className="text-[10px] text-gray-400 font-medium mb-1 block uppercase">직제 단계 {index + 1}</span>
+                                  <span className="text-xs md:text-sm text-gray-800 font-bold whitespace-normal leading-tight">{node}</span>
+                                </div>
+                                {index < 5 && <div className="block md:hidden text-lg text-gray-200 flex items-center justify-center px-1">➡️</div>}
+                              </React.Fragment>
+                            ))}
+                          </div>
+
+                          <div className="p-4 bg-amber-50/40 border border-amber-100 text-xs md:text-sm text-gray-800 rounded-xl leading-relaxed m-0">
+                            <p className="m-0 text-xs leading-relaxed font-medium">{selectedAnalysisData.org}</p>
                           </div>
                         </div>
                       )}
+
                       {currentSubTab === '도움말' && (
                         <p className="text-xs md:text-sm text-gray-600 m-0 leading-relaxed">• <strong>스마트 링크 매핑</strong>: 💻 PC 브라우저에서는 마우스 드래그를 통해 임의 영역의 텍스트를 즉시 챗봇에 질의할 수 있으며, 📱 모바일 터치 패널에서는 우측 상단의 원터치 [💬 질문] 버튼을 탭하여 가설 기획서 상담 피드를 트리거할 수 있습니다.</p>
                       )}
@@ -482,7 +524,7 @@ export default function App() {
               </div>
             )}
 
-            {/* 3. 챗봇 세션 */}
+            {/* 3. 챗봇 섹션 */}
             {currentMenu === '챗봇' && (
               <div className="w-full max-w-3xl flex flex-col h-[70vh] md:h-[75vh] bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-left">
                 <div className="bg-gray-950 text-white px-5 py-3.5 flex justify-between items-center select-none shrink-0">
@@ -532,9 +574,9 @@ export default function App() {
 
       </main>
 
-      {/* ================= 📱 모바일 하단 고정형 네비게이션 바 ================= */}
+      {/* ================= 📱 모바일 하단 고정형 앱 바 ================= */}
       {activeReportIdx !== null && (
-        <nav className="w-full bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 h-16 flex z-40 select-none shadow-xl md:hidden">
+        <nav className="w-full bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 h-16 flex z-40 select-none shadow-xl md:hidden shrink-0">
           {menuItems.map((item) => {
             let icon = '🔎';
             if (item === '자료분석') icon = '📊';
